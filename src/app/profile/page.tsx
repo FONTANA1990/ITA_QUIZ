@@ -1,0 +1,253 @@
+"use client";
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  User, Settings, Shield, Bell, HelpCircle, LogOut, 
+  ChevronRight, ArrowLeft, Moon, Sun, Check, Coins 
+} from "lucide-react";
+import { useUser } from "@/context/UserContext";
+
+const avatars = [
+  "🎮", "🛡️", "🔥", "💎", "🌟", "🦁", "🕊️", "⚓", "👑", "📜",
+  "🦦", "🐕", "🐼", "🦜", "⚽", "🐒", "🥥", "🐆", "🏖️", "🩴"
+];
+const currencies = ["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Moedas de Ouro"];
+
+export default function Profile() {
+  const { preferences, setTheme, setAvatar, setCurrency, user, updateNickname } = useUser();
+  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help">("menu");
+
+  const renderHeader = (title: string) => (
+    <div className="flex items-center gap-4 mb-8">
+      <button 
+        onClick={() => setActiveTab("menu")}
+        aria-label="Voltar ao menu"
+        className="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+      </button>
+      <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">{title}</h1>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[var(--background)] p-4 transition-colors duration-300">
+      <AnimatePresence mode="wait">
+        {activeTab === "menu" && (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="flex flex-col flex-1"
+          >
+            <div className="flex flex-col items-center mt-12 mb-10">
+              <div className="w-28 h-28 bg-gradient-to-tr from-[var(--primary)] to-[var(--secondary)] rounded-[2.5rem] p-1 shadow-3xl shadow-indigo-500/20 rotate-3 group relative">
+                <div className="w-full h-full bg-[var(--surface)] rounded-[2.3rem] flex items-center justify-center border-4 border-[var(--background)] -rotate-3 transition-transform group-hover:rotate-0">
+                  <span className="text-6xl">{preferences.avatar}</span>
+                </div>
+                <button 
+                  onClick={() => setActiveTab("avatars")}
+                  aria-label="Escolher avatar"
+                  className="absolute bottom-0 right-0 bg-[var(--primary)] p-2 rounded-xl text-white shadow-lg"
+                >
+                  <Settings size={16} />
+                </button>
+              </div>
+              <h2 className="mt-6 text-3xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none">
+                {user?.nickname || "JOGADOR ITA"}
+              </h2>
+              <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3 bg-[var(--surface)] px-4 py-1.5 rounded-full border border-[var(--border)]">
+                 Nível 12 • Bronze
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <MenuButton 
+                label="Configurações da Conta" 
+                icon={Settings} 
+                color="text-[#6366F1]" 
+                onClick={() => setActiveTab("settings")} 
+              />
+              <MenuButton 
+                label="Privacidade e Segurança" 
+                icon={Shield} 
+                color="text-[#22C55E]" 
+                onClick={() => setActiveTab("privacy")} 
+              />
+              <MenuButton 
+                label="Ajuda e Suporte" 
+                icon={HelpCircle} 
+                color="text-[#22D3EE]" 
+                onClick={() => setActiveTab("help")} 
+              />
+            </div>
+
+            <div className="mt-auto items-center flex justify-center pb-8 pt-8">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="flex items-center gap-2 text-[#EF4444] font-black uppercase text-[10px] tracking-[0.2em] bg-[#EF4444]/10 px-8 py-4 rounded-full border border-[#EF4444]/20 hover:bg-[#EF4444]/20 transition-all italic"
+              >
+                <LogOut size={16} strokeWidth={3} /> SAIR DO APP
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "settings" && (
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            {renderHeader("Configurações")}
+            
+            <div className="space-y-6">
+              <section className="bg-[var(--surface)] p-6 rounded-[2rem] border border-[var(--border)] shadow-xl">
+                <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-4 block italic">Tema Visual</label>
+                <div className="flex gap-4">
+                  <ThemeToggle 
+                    active={preferences.theme === "light"} 
+                    icon={Sun} 
+                    label="Claro" 
+                    onClick={() => setTheme("light")} 
+                  />
+                  <ThemeToggle 
+                    active={preferences.theme === "dark"} 
+                    icon={Moon} 
+                    label="Escuro" 
+                    onClick={() => setTheme("dark")} 
+                  />
+                </div>
+              </section>
+
+              <section className="bg-[var(--surface)] p-6 rounded-[2rem] border border-[var(--border)] shadow-xl">
+                <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-4 block italic text-glow-blue flex items-center gap-2">
+                  <Coins size={12} /> Moeda Bíblica Preferida
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {currencies.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCurrency(c as any)}
+                      className={`px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border ${
+                        preferences.currency === c 
+                          ? "bg-[var(--primary)] border-[var(--primary)] text-white" 
+                          : "bg-[var(--background)] border-[var(--border)] text-slate-500"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "avatars" && (
+          <motion.div
+            key="avatars"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {renderHeader("Escolha seu Avatar")}
+            <div className="grid grid-cols-4 gap-4">
+              {avatars.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => {
+                    setAvatar(a);
+                    setActiveTab("menu");
+                  }}
+                  className={`aspect-square flex items-center justify-center text-4xl bg-[var(--surface)] rounded-2xl border-2 transition-all hover:scale-110 active:scale-95 shadow-lg ${
+                    preferences.avatar === a ? "border-[var(--primary)]" : "border-[var(--border)]"
+                  }`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "privacy" && (
+          <motion.div
+            key="privacy"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {renderHeader("Privacidade")}
+            <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)] space-y-4">
+               <p className="text-sm text-slate-400 font-medium">Seus dados de perfil e preferências são armazenados localmente no seu dispositivo.</p>
+               <p className="text-sm text-slate-400 font-medium">Ao jogar, apenas seu Nickname e Pontuação são enviados ao servidor ITA QUIZ para o Ranking Global.</p>
+               <div className="pt-4 border-t border-[var(--border)]">
+                 <button className="text-[var(--primary)] font-black uppercase text-[10px] tracking-widest">Ver termos completos</button>
+               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "help" && (
+          <motion.div
+            key="help"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {renderHeader("Ajuda")}
+            <div className="space-y-4">
+               <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)]">
+                  <h4 className="font-black text-[var(--foreground)] uppercase text-sm mb-2">Como jogar?</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Digite o código da sala fornecido pelo admin e escolha um apelido. Responda o mais rápido possível para ganhar bônus!</p>
+               </div>
+               <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)]">
+                  <h4 className="font-black text-[var(--foreground)] uppercase text-sm mb-2">Problemas técnicos?</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">Se o jogo travar, tente atualizar a página ou verificar sua conexão com a internet.</p>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function MenuButton({ label, icon: Icon, color, onClick }: any) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="w-full flex items-center justify-between p-5 bg-[var(--surface)] border border-[var(--border)] rounded-[2rem] shadow-xl group transition-all hover:border-[var(--primary)]/30"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`p-2.5 rounded-2xl bg-[var(--background)] ${color} shadow-lg`}>
+          <Icon size={22} strokeWidth={3} />
+        </div>
+        <span className="font-black text-[var(--foreground)] text-sm uppercase italic tracking-tighter">{label}</span>
+      </div>
+      <ChevronRight size={18} className="text-slate-600 group-hover:text-[var(--primary)] transition-colors" />
+    </motion.button>
+  );
+}
+
+function ThemeToggle({ active, icon: Icon, label, onClick }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+        active 
+          ? "bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]" 
+          : "bg-[var(--background)] border-[var(--border)] text-slate-500"
+      }`}
+    >
+      <Icon size={24} strokeWidth={active ? 3 : 2} />
+      <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+      {active && <Check size={12} strokeWidth={4} className="mt-1" />}
+    </button>
+  );
+}
