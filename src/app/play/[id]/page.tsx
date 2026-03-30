@@ -191,7 +191,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                         whileTap={{ scale: 0.95 }}
                         disabled={isTimeUp}
                         onClick={() => submitAnswer(key)}
-                        className={`p-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-4 transition-all shadow-xl group disabled:opacity-50 ${
+                        className={`p-4 md:p-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-2 md:gap-4 transition-all shadow-xl group disabled:opacity-50 min-h-[140px] ${
                           key === "A" ? "bg-[#EF4444] border-red-400/50" :
                           key === "B" ? "bg-[#3B82F6] border-blue-400/50" :
                           key === "C" ? "bg-[#F59E0B] border-amber-400/50" :
@@ -201,7 +201,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                          <div className="bg-white/20 w-12 h-12 flex items-center justify-center rounded-2xl font-black text-2xl group-hover:bg-white/30 transition-colors">
                            {key}
                          </div>
-                         <span className="font-extrabold uppercase italic tracking-tighter text-sm text-center line-clamp-2">{value as string}</span>
+                         <span className="font-extrabold uppercase italic tracking-tighter text-xs md:text-sm text-center line-clamp-3 leading-tight px-1">{value as string}</span>
                       </motion.button>
                     ))}
                   </div>

@@ -71,17 +71,26 @@ ALTER TABLE scores ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE 
 -- 2. Gatilhos de Pontuação Automática
 CREATE OR REPLACE FUNCTION update_score()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_quiz_id UUID;
 BEGIN
-  IF NEW.is_correct = true THEN
-    INSERT INTO scores (user_id, quiz_id, total_points)
-    SELECT NEW.user_id, q.quiz_id, 100
-    FROM questions q
-    WHERE q.id = NEW.question_id
-    ON CONFLICT (user_id, quiz_id)
-    DO UPDATE SET total_points = scores.total_points + 100;
-  END IF;
+    -- Busca o quiz_id ao qual a questão pertence
+    SELECT quiz_id INTO v_quiz_id FROM public.questions WHERE id = NEW.question_id;
 
-  RETURN NEW;
+    IF NEW.is_correct = true THEN
+        -- 1. Atualizar Score da Partida Atual
+        INSERT INTO public.scores (user_id, quiz_id, total_points)
+        VALUES (NEW.user_id, v_quiz_id, 100)
+        ON CONFLICT (user_id, quiz_id)
+        DO UPDATE SET total_points = public.scores.total_points + 100;
+
+        -- 2. Atualizar Pontuação Global do Usuário
+        UPDATE public.users 
+        SET total_points = COALESCE(total_points, 0) + 100 
+        WHERE id = NEW.user_id;
+    END IF;
+
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -3,15 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Gamepad2, Loader2, Play } from "lucide-react";
+import { Gamepad2, Loader2, Play, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 
 export default function Home() {
+  const { user: contextUser } = useUser();
   const [nickname, setNickname] = useState("");
   const [quizId, setQuizId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // Se o usuário já estiver logado, preenche o nickname
+  useState(() => {
+    if (contextUser?.nickname) setNickname(contextUser.nickname);
+  });
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,28 +46,50 @@ export default function Home() {
         throw new Error("Esta partida já encerrou.");
       }
 
-      // 2. Criar usuário e registrá-lo
-      const { data: user, error: userError } = await supabase
-        .from("users")
-        .insert([{ nickname: nickname.trim(), role: "player" }])
-        .select()
-        .single();
+      // 2. Identificar Usuário (Auth > LocalStorage > Novo)
+      let userId: string;
+      let finalNickname = nickname.trim();
 
-      if (userError || !user) {
-        throw new Error("Ocorreu um erro ao entrar no jogo.");
+      if (contextUser) {
+        // Usuário logado via Auth (Supabase Auth)
+        userId = contextUser.id;
+        finalNickname = contextUser.nickname;
+      } else {
+        // Verificar se existe usuário anônimo salvo na máquina
+        const savedUser = localStorage.getItem("ita_quiz_user");
+        const parsed = savedUser ? JSON.parse(savedUser) : null;
+        
+        if (parsed && parsed.nickname === finalNickname) {
+          userId = parsed.id;
+        } else {
+          // Criar novo usuário anônimo
+          const { data: newUser, error: userError } = await supabase
+            .from("users")
+            .insert([{ nickname: finalNickname, role: "player" }])
+            .select()
+            .single();
+
+          if (userError || !newUser) {
+            throw new Error("Ocorreu um erro ao criar seu perfil.");
+          }
+          userId = newUser.id;
+        }
       }
 
-      // 3. Vincular usuário ao quiz (Criar Score inicial de 0)
+      // 3. Vincular usuário ao quiz (Upsert Score)
       const { error: scoreError } = await supabase
         .from("scores")
-        .insert([{ user_id: user.id, quiz_id: quiz.id, total_points: 0 }]);
+        .upsert({ 
+          user_id: userId, 
+          quiz_id: quiz.id,
+        }, { onConflict: 'user_id, quiz_id' });
 
       if (scoreError) {
         throw new Error("Erro ao vincular você a esta partida.");
       }
 
-      // 4. Adiciona sessão na cache local e vai para a sala
-      localStorage.setItem("ita_quiz_user", JSON.stringify({ id: user.id, nickname: user.nickname }));
+      // 4. Salvar na sessão local e navegar
+      localStorage.setItem("ita_quiz_user", JSON.stringify({ id: userId, nickname: finalNickname }));
       router.push(`/play/${quiz.id}`);
     } catch (err: any) {
       setError(err.message || "Erro desconhecido");
