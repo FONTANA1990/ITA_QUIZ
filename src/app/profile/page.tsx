@@ -135,8 +135,8 @@ export default function Profile() {
               />
               {!user && (
                 <MenuButton 
-                  label="Acesso Admin" 
-                  icon={Lock} 
+                  label="Entrar ou Cadastrar" 
+                  icon={User} 
                   color="text-[#A855F7]" 
                   onClick={() => setActiveTab("adminAuth")} 
                 />
@@ -289,13 +289,13 @@ export default function Profile() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
-            {renderHeader("Acesso Reservado")}
+            {renderHeader("Entrar no App")}
             <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)] shadow-xl space-y-4">
                <div className="text-center mb-6">
                  <div className="w-16 h-16 bg-[#A855F7]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#A855F7]/20">
-                   <Lock size={32} className="text-[#A855F7]" />
+                   <User size={32} className="text-[#A855F7]" />
                  </div>
-                 <p className="text-sm font-medium text-slate-400">Entre com sua conta para gerenciar os quizzes.</p>
+                 <p className="text-sm font-medium text-slate-400">Identifique-se para salvar seu progresso e conquistas.</p>
                </div>
 
                {authError && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase text-center">{authError}</div>}
