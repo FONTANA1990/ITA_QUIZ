@@ -54,9 +54,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         .from("users")
         .select("*")
         .eq("id", sessionUser.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         // Fallback: se o trigger demorar, cria um objeto básico
         setUser({
           id: sessionUser.id,

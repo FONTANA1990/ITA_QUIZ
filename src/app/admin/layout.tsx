@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .from("users")
           .select("role")
           .eq("id", authUser.id)
-          .single();
+          .maybeSingle();
 
         if (isMounted) {
           if (profile?.role === "admin") {

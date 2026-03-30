@@ -128,45 +128,63 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[var(--surface)] p-8 rounded-[3rem] border border-[var(--border)] shadow-2xl relative overflow-hidden">
+        <div className="bg-[var(--surface)] p-6 md:p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden">
            <div className="absolute top-0 right-0 p-12 bg-[var(--primary)]/5 blur-3xl rounded-full -mr-16 -mt-16" />
-           <div className="flex items-center gap-6 relative z-10">
-              <button 
-                onClick={() => router.push('/admin')}
-                aria-label="Voltar ao Painel"
-                className="p-3 bg-[var(--background)] rounded-2xl border border-[var(--border)] hover:bg-[var(--surface-hover)] transition-all"
-              >
-                 <ArrowLeft size={20} />
-              </button>
-              <div>
-                <h1 className="text-4xl font-black italic uppercase tracking-tighter leading-none">{quiz?.title}</h1>
-                <div className="flex items-center gap-3 mt-2">
-                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-[var(--background)] px-3 py-1 rounded-full border border-[var(--border)]">Entrar com PIN: <span className="text-[var(--primary)]">{quiz?.pin}</span></span>
-                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-[var(--background)] px-3 py-1 rounded-full border border-[var(--border)] flex items-center gap-2">
-                      <Users size={14} className="text-[var(--primary)]" /> {participants.length} Jogadores
-                   </span>
-                </div>
+           
+           <div className="flex flex-col gap-6 relative z-10">
+              {/* Top Bar: Back + Title */}
+              <div className="flex items-start gap-4">
+                 <button 
+                   onClick={() => router.push('/admin')}
+                   aria-label="Voltar ao Painel"
+                   className="p-3 bg-[var(--background)] rounded-2xl border border-[var(--border)] hover:bg-[var(--surface-hover)] transition-all flex-shrink-0"
+                 >
+                    <ArrowLeft size={20} />
+                 </button>
+                 <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-[0.9] break-words">
+                      {quiz?.title}
+                    </h1>
+                 </div>
               </div>
-           </div>
 
-           <div className="flex gap-3 relative z-10">
-              {quiz?.status === "waiting" && (
-                <button
-                  onClick={startQuiz}
-                  disabled={actionLoading || participants.length === 0}
-                  className="bg-[var(--primary)] hover:opacity-90 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-indigo-500/20 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <Play size={18} fill="currentColor" /> COMEÇAR AGORA
-                </button>
-              )}
-              {quiz?.status === "playing" && (
-                <button
-                  onClick={nextQuestion}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-500/20 flex items-center gap-2"
-                >
-                  <SkipForward size={18} fill="currentColor" /> {currentQuestionIdx + 1 === questions.length ? "FINALIZAR QUIZ" : "PRÓXIMA PERGUNTA"}
-                </button>
-              )}
+              {/* Status & Actions Bar */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-4 border-t border-[var(--border)]/50">
+                 <div className="flex flex-wrap items-center gap-3">
+                    <div className="bg-[var(--primary)]/10 px-4 py-2 rounded-2xl border border-[var(--primary)]/20 flex flex-col items-center min-w-[100px]">
+                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Entrar com PIN</span>
+                       <span className="text-lg md:text-xl font-black text-[var(--primary)] tracking-widest leading-none">{quiz?.pin}</span>
+                    </div>
+                    <div className="bg-[var(--background)] px-4 py-2 rounded-2xl border border-[var(--border)] flex flex-col items-center min-w-[100px]">
+                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 flex items-center gap-1">
+                          <Users size={10} /> Jogadores
+                       </span>
+                       <span className="text-lg md:text-xl font-black text-[var(--foreground)] tracking-tighter leading-none">{participants.length}</span>
+                    </div>
+                 </div>
+
+                 <div className="flex gap-2">
+                    {quiz?.status === "waiting" && (
+                      <button
+                        onClick={startQuiz}
+                        disabled={actionLoading || participants.length === 0}
+                        className="flex-1 md:flex-none bg-[var(--primary)] hover:opacity-90 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-95"
+                      >
+                        <Play size={18} fill="currentColor" /> COMEÇAR
+                      </button>
+                    )}
+                    {quiz?.status === "playing" && (
+                      <button
+                        onClick={nextQuestion}
+                        className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                      >
+                        <SkipForward size={18} fill="currentColor" /> 
+                        <span className="hidden md:inline">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR QUIZ" : "PRÓXIMA PERGUNTA"}</span>
+                        <span className="md:hidden">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR" : "PRÓXIMA"}</span>
+                      </button>
+                    )}
+                 </div>
+              </div>
            </div>
         </div>
 

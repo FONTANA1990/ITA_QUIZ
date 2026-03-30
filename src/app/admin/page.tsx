@@ -331,71 +331,68 @@ export default function AdminDashboard() {
                   <Users size={14} /> {allUsers.length} Logados
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-[var(--background)]/30">
-                    <tr>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Usuário</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Email</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Pontos</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Cargo</th>
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-500 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
-                    {allUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-[var(--primary)]/5 transition-colors group">
-                        <td className="px-6 py-4">
-                          <span className="font-black text-sm text-white italic uppercase tracking-tighter">{u.nickname}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-xs text-slate-400 font-medium">{u.email}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black text-[var(--primary)] uppercase italic leading-none">{u.total_points}</span>
-                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">Pontos Totais</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                            u.role === 'admin' ? 'bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30' : 'bg-slate-800 text-slate-500'
-                          }`}>
-                            {u.role === 'admin' ? 'Admin' : 'Jogador'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            {u.id !== currentUser?.id && (
-                              <>
-                                <button
-                                  onClick={() => handlePromoteAdmin(u.id, u.role)}
-                                  className={`p-2 rounded-xl border transition-all ${
-                                    u.role === 'admin' 
-                                      ? 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' 
-                                      : 'bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] hover:bg-[#A855F7] hover:text-white'
-                                  }`}
-                                  title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
-                                  aria-label={u.role === 'admin' ? "Remover cargo de administrador" : "Promover a administrador"}
-                                >
-                                  <ShieldCheck size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(u.id, u.nickname)}
-                                  className="p-2 rounded-xl border bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                                  title="Excluir Usuário"
-                                  aria-label={`Excluir usuário ${u.nickname}`}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 md:p-6 bg-[var(--background)]/20">
+                {allUsers.map((u) => (
+                  <motion.div 
+                    key={u.id} 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-[var(--surface)] p-5 rounded-[2.5rem] border border-[var(--border)] shadow-xl flex flex-col gap-4 group hover:border-[var(--primary)]/30 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-tr from-[var(--primary)]/20 to-[var(--secondary)]/20 rounded-2xl flex items-center justify-center border border-[var(--border)]">
+                          <Users size={24} className="text-[var(--primary)]" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-black text-lg text-[var(--foreground)] italic uppercase tracking-tighter leading-none">{u.nickname}</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5 truncate max-w-[150px]">{u.email || "Sem Email"}</span>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        u.role === 'admin' ? 'bg-[#A855F7]/20 text-[#A855F7] border border-[#A855F7]/30' : 'bg-[var(--background)] text-slate-500 border border-[var(--border)]'
+                      }`}>
+                        {u.role === 'admin' ? 'Admin' : 'Jogador'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--border)]/50">
+                      <div className="flex flex-col bg-[var(--background)]/50 p-3 rounded-2xl border border-[var(--border)]">
+                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em] mb-1">Pontuação</span>
+                        <span className="text-lg font-black text-[var(--primary)] italic leading-none">{u.total_points || 0}</span>
+                      </div>
+                      <div className="flex flex-col bg-[var(--background)]/50 p-3 rounded-2xl border border-[var(--border)]">
+                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em] mb-1">Status</span>
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none">Ativo</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-2">
+                       {u.id !== currentUser?.id && (
+                         <>
+                           <button
+                             onClick={() => handlePromoteAdmin(u.id, u.role)}
+                             title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
+                             className={`flex-1 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest flex items-center justify-center gap-2 transition-all border ${
+                               u.role === 'admin' 
+                                 ? 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500' 
+                                 : 'bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] hover:bg-[#A855F7]'
+                             } hover:text-white active:scale-95`}
+                           >
+                             <ShieldCheck size={14} /> {u.role === 'admin' ? "REBAIXAR" : "PROMOVER"}
+                           </button>
+                           <button
+                             onClick={() => handleDeleteUser(u.id, u.nickname)}
+                             title="Excluir Usuário"
+                             className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                           >
+                             <Trash2 size={16} />
+                           </button>
+                         </>
+                       )}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </motion.div>
