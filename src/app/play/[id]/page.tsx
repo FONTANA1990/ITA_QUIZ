@@ -120,7 +120,12 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
           </div>
           <div className="flex flex-col">
             <span className="font-black text-[var(--foreground)] italic tracking-tighter text-sm leading-none">{contextUser?.nickname}</span>
-            <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-slate-500 mt-1">Nível 12 • Bronze</span>
+            <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-slate-500 mt-1">
+              Nível {Math.floor((contextUser?.total_points || 0) / 500) + 1} • {
+                (contextUser?.total_points || 0) >= 5000 ? "Ouro" : 
+                (contextUser?.total_points || 0) >= 1000 ? "Prata" : "Bronze"
+              }
+            </span>
           </div>
         </div>
         <div className="bg-[var(--background)]/80 px-4 py-1.5 rounded-full border border-[var(--border)] font-black text-[10px] tracking-widest text-slate-500">
@@ -159,6 +164,12 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                 <>
                   <div className="text-center mb-6">
                     <div className="flex justify-center gap-4 mb-4">
+                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3 bg-[var(--surface)] px-4 py-1.5 rounded-full border border-[var(--border)]">
+                        Nível {Math.floor((contextUser?.total_points || 0) / 500) + 1} • {
+                          (contextUser?.total_points || 0) >= 5000 ? "Ouro" : 
+                          (contextUser?.total_points || 0) >= 1000 ? "Prata" : "Bronze"
+                        }
+                      </span>
                       <span className="text-[var(--primary)] text-xs font-black uppercase tracking-[0.3em] bg-[var(--primary)]/10 px-4 py-1 rounded-full border border-[var(--primary)]/20">
                         Questão {quiz.current_question_index + 1}
                       </span>

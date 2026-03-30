@@ -68,6 +68,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, nickname: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir permanentemente o usuário "${nickname}"? Esta ação é irreversível e removerá todos os seus scores.`)) return;
+
+    setLoading(true);
+    try {
+      // 1. Remover scores vinculados
+      await supabase.from("scores").delete().eq("user_id", userId);
+      // 2. Remover respostas vinculadas
+      await supabase.from("answers").delete().eq("user_id", userId);
+      // 3. Remover o usuário da tabela pública
+      const { error } = await supabase.from("users").delete().eq("id", userId);
+
+      if (error) throw error;
+
+      setStatus({ type: "success", msg: "Usuário removido com sucesso!" });
+      fetchUsers();
+    } catch (err: any) {
+      console.error("Erro ao deletar usuário:", err);
+      setStatus({ type: "error", msg: "Erro ao remover usuário. Verifique permissões." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const downloadTemplate = () => {
     const headers = "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta\n";
     const example = "Qual a capital da França?,Paris,Londres,Berlim,Madrid,A";
@@ -327,20 +351,32 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {u.id !== currentUser?.id && (
-                            <button
-                              onClick={() => handlePromoteAdmin(u.id, u.role)}
-                              className={`p-2 rounded-xl border transition-all ${
-                                u.role === 'admin' 
-                                  ? 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' 
-                                  : 'bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] hover:bg-[#A855F7] hover:text-white'
-                              }`}
-                              title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
-                              aria-label={u.role === 'admin' ? "Remover cargo de administrador" : "Promover a administrador"}
-                            >
-                              <ShieldCheck size={16} />
-                            </button>
-                          )}
+                          <div className="flex justify-end gap-2">
+                            {u.id !== currentUser?.id && (
+                              <>
+                                <button
+                                  onClick={() => handlePromoteAdmin(u.id, u.role)}
+                                  className={`p-2 rounded-xl border transition-all ${
+                                    u.role === 'admin' 
+                                      ? 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' 
+                                      : 'bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] hover:bg-[#A855F7] hover:text-white'
+                                  }`}
+                                  title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
+                                  aria-label={u.role === 'admin' ? "Remover cargo de administrador" : "Promover a administrador"}
+                                >
+                                  <ShieldCheck size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u.id, u.nickname)}
+                                  className="p-2 rounded-xl border bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                                  title="Excluir Usuário"
+                                  aria-label={`Excluir usuário ${u.nickname}`}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
