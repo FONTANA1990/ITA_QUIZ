@@ -300,8 +300,22 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => router.push(`/admin/${q.id}`)} className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={18} /></button>
-                    <button onClick={() => handleDeleteQuiz(q.id)} className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={18} /></button>
+                    <button 
+                      onClick={() => router.push(`/admin/${q.id}`)} 
+                      className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"
+                      title="Gerenciar Partida"
+                      aria-label={`Gerenciar partida ${q.title}`}
+                    >
+                      <ExternalLink size={18} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteQuiz(q.id)} 
+                      className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                      title="Excluir Quiz"
+                      aria-label={`Excluir quiz ${q.title}`}
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
               ))}

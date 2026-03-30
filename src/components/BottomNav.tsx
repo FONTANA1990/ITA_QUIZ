@@ -27,10 +27,10 @@ export default function BottomNav() {
   // Esconder a barra durante o jogo real (Arena) ou antes de montar no cliente
   if (!mounted || pathname.includes("/play/")) return null;
 
-  // Filtrar itens: só mostra Admin se o usuário for admin
+  // Filtrar itens: só mostra Admin se o usuário for admin ou super-admin
   const filteredNavItems = navItems.filter(item => {
     if (item.label === "Admin") {
-      return user?.role === "admin";
+      return user?.role === "admin" || user?.email === "mediattamoveis@gmail.com";
     }
     return true;
   });

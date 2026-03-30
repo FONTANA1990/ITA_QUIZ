@@ -141,7 +141,7 @@ export default function Profile() {
                   onClick={() => setActiveTab("adminAuth")} 
                 />
               )}
-              {user?.role === 'admin' && (
+              {(user?.role === 'admin' || user?.email === 'mediattamoveis@gmail.com') && (
                 <MenuButton 
                   label="Painel Administrativo" 
                   icon={Shield} 
