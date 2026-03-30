@@ -336,6 +336,7 @@ export default function AdminDashboard() {
                                   : 'bg-[#A855F7]/10 border-[#A855F7]/20 text-[#A855F7] hover:bg-[#A855F7] hover:text-white'
                               }`}
                               title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
+                              aria-label={u.role === 'admin' ? "Remover cargo de administrador" : "Promover a administrador"}
                             >
                               <ShieldCheck size={16} />
                             </button>

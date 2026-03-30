@@ -84,7 +84,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   };
 
   const submitAnswer = async (option: string) => {
-    if (answered || quiz.status !== "playing" || isTimeUp) return;
+    if (!contextUser || !quiz || answered || quiz.status !== "playing" || isTimeUp) return;
     
     setAnswered(true);
     const currentQuestion = questions[quiz.current_question_index];
