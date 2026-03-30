@@ -60,8 +60,13 @@ CREATE TABLE IF NOT EXISTS scores (
   user_id UUID REFERENCES users(id),
   quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
   total_points INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(user_id, quiz_id)
 );
+
+-- Garantir colunas em bancos já existentes
+ALTER TABLE users ADD COLUMN IF NOT EXISTS total_points INTEGER DEFAULT 0;
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- 2. Gatilhos de Pontuação Automática
 CREATE OR REPLACE FUNCTION update_score()
