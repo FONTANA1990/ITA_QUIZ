@@ -14,12 +14,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (!isMounted) return;
+
+        if (!authUser) {
+          router.push("/profile");
+          return;
+        }
+
+        // Permissão Hardcoded para Super-Admin
+        if (authUser.email === "mediattamoveis@gmail.com") {
+          setLoading(false);
+          return;
+        }
+
+        // Consultar banco para verificar se é Admin promovido
+        const { data: profile } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", authUser.id)
+          .single();
+
         if (isMounted) {
-          if (!user || user.email !== "mediattamoveis@gmail.com") {
-            router.push("/profile");
-          } else {
+          if (profile?.role === "admin") {
             setLoading(false);
+          } else {
+            router.push("/profile");
           }
         }
       } catch (err) {

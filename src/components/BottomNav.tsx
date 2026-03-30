@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, LayoutDashboard, Trophy, User, History } from "lucide-react";
 import { motion } from "framer-motion";
+import { useUser } from "@/context/UserContext";
 
 const navItems = [
   { label: "Início", icon: Home, path: "/" },
@@ -16,6 +17,7 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user } = useUser();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,10 +27,18 @@ export default function BottomNav() {
   // Esconder a barra durante o jogo real (Arena) ou antes de montar no cliente
   if (!mounted || pathname.includes("/play/")) return null;
 
+  // Filtrar itens: só mostra Admin se o usuário for admin
+  const filteredNavItems = navItems.filter(item => {
+    if (item.label === "Admin") {
+      return user?.role === "admin";
+    }
+    return true;
+  });
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-[var(--background)]/95 backdrop-blur-xl border-t border-[var(--border)] p-2 pb-[1.2rem] z-50 transition-colors duration-300">
       <div className="max-w-md mx-auto flex justify-around items-end">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = pathname === item.path;
           return (
             <Link key={item.path} href={item.path} className="relative group">

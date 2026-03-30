@@ -18,18 +18,31 @@ const avatars = [
 const currencies = ["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Moedas de Ouro"];
 
 export default function Profile() {
-  const { preferences, setTheme, setAvatar, setCurrency, user, updateNickname } = useUser();
+  const { preferences, setTheme, setAvatar, setCurrency, user, logout } = useUser();
   const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth">("menu");
   const router = useRouter();
   
   // States do Login
-  const [email, setEmail] = useState("mediattamoveis@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
 
+  // Cálculo de Ranking Dinâmico
+  const points = user?.total_points || 0;
+  const level = Math.floor(points / 500) + 1;
+  const getRank = () => {
+    if (points >= 5000) return "Ouro";
+    if (points >= 1000) return "Prata";
+    return "Bronze";
+  };
+
   const handleAuth = async (isSignUp: boolean) => {
+    if (!email || !password) {
+      setAuthError("Preencha email e senha");
+      return;
+    }
     setAuthLoading(true);
     setAuthError("");
     setAuthSuccess("");
@@ -37,12 +50,12 @@ export default function Profile() {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setAuthSuccess("Conta criada com sucesso! Você já pode logar.");
+        setAuthSuccess("Conta criada! Verifique seu email ou tente logar.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        setAuthSuccess("Logado! Redirecionando...");
-        setTimeout(() => router.push("/admin"), 1000);
+        setAuthSuccess("Sucesso! Entrando...");
+        setTimeout(() => setActiveTab("menu"), 1000);
       }
     } catch (err: any) {
       setAuthError(err.message || "Erro de autenticação");
@@ -70,7 +83,7 @@ export default function Profile() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--background)] p-4 transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-[var(--background)] p-4 pb-24 transition-colors duration-300">
       <AnimatePresence mode="wait">
         {activeTab === "menu" && (
           <motion.div
@@ -93,11 +106,11 @@ export default function Profile() {
                   <Settings size={16} />
                 </button>
               </div>
-              <h2 className="mt-6 text-3xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none">
+              <h2 className="mt-6 text-3xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none text-center">
                 {user?.nickname || "JOGADOR ITA"}
               </h2>
               <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3 bg-[var(--surface)] px-4 py-1.5 rounded-full border border-[var(--border)]">
-                 Nível 12 • Bronze
+                 Nível {level} • {getRank()}
               </span>
             </div>
 
@@ -120,22 +133,35 @@ export default function Profile() {
                 color="text-[#22D3EE]" 
                 onClick={() => setActiveTab("help")} 
               />
-              <MenuButton 
-                label="Acesso Admin" 
-                icon={Lock} 
-                color="text-[#A855F7]" 
-                onClick={() => setActiveTab("adminAuth")} 
-              />
+              {!user && (
+                <MenuButton 
+                  label="Acesso Admin" 
+                  icon={Lock} 
+                  color="text-[#A855F7]" 
+                  onClick={() => setActiveTab("adminAuth")} 
+                />
+              )}
+              {user?.role === 'admin' && (
+                <MenuButton 
+                  label="Painel Administrativo" 
+                  icon={Shield} 
+                  color="text-[#A855F7]" 
+                  onClick={() => router.push("/admin")} 
+                />
+              )}
             </div>
 
-            <div className="mt-auto items-center flex justify-center pb-8 pt-8">
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                className="flex items-center gap-2 text-[#EF4444] font-black uppercase text-[10px] tracking-[0.2em] bg-[#EF4444]/10 px-8 py-4 rounded-full border border-[#EF4444]/20 hover:bg-[#EF4444]/20 transition-all italic"
-              >
-                <LogOut size={16} strokeWidth={3} /> SAIR DO APP
-              </motion.button>
-            </div>
+            {user && (
+              <div className="mt-auto items-center flex justify-center pb-8 pt-8">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={logout}
+                  className="flex items-center gap-2 text-[#EF4444] font-black uppercase text-[10px] tracking-[0.2em] bg-[#EF4444]/10 px-8 py-4 rounded-full border border-[#EF4444]/20 hover:bg-[#EF4444]/20 transition-all italic"
+                >
+                  <LogOut size={16} strokeWidth={3} /> SAIR DO APP
+                </motion.button>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -207,8 +233,8 @@ export default function Profile() {
                     setAvatar(a);
                     setActiveTab("menu");
                   }}
-                  className={`aspect-square flex items-center justify-center text-4xl bg-[var(--surface)] rounded-2xl border-2 transition-all hover:scale-110 active:scale-95 shadow-lg ${
-                    preferences.avatar === a ? "border-[var(--primary)]" : "border-[var(--border)]"
+                  className={`text-3xl p-4 rounded-2xl transition-all ${
+                    preferences.avatar === a ? "bg-[var(--primary)] scale-110 shadow-lg" : "bg-[var(--surface)] hover:bg-[var(--background)]"
                   }`}
                 >
                   {a}
@@ -227,8 +253,8 @@ export default function Profile() {
           >
             {renderHeader("Privacidade")}
             <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)] space-y-4">
-               <p className="text-sm text-slate-400 font-medium">Seus dados de perfil e preferências são armazenados localmente no seu dispositivo.</p>
-               <p className="text-sm text-slate-400 font-medium">Ao jogar, apenas seu Nickname e Pontuação são enviados ao servidor ITA QUIZ para o Ranking Global.</p>
+               <p className="text-sm text-slate-400 font-medium">Seus dados de perfil e preferências são armazenados de forma segura.</p>
+               <p className="text-sm text-slate-400 font-medium">Ao jogar, sua Pontuação é enviada ao servidor ITA QUIZ para o Ranking Global.</p>
                <div className="pt-4 border-t border-[var(--border)]">
                  <button className="text-[var(--primary)] font-black uppercase text-[10px] tracking-widest">Ver termos completos</button>
                </div>
@@ -269,7 +295,7 @@ export default function Profile() {
                  <div className="w-16 h-16 bg-[#A855F7]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#A855F7]/20">
                    <Lock size={32} className="text-[#A855F7]" />
                  </div>
-                 <p className="text-sm font-medium text-slate-400">Área exclusiva para gestão de quizzes.</p>
+                 <p className="text-sm font-medium text-slate-400">Entre com sua conta para gerenciar os quizzes.</p>
                </div>
 
                {authError && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase text-center">{authError}</div>}
@@ -277,15 +303,15 @@ export default function Profile() {
 
                <div className="space-y-4 pt-2">
                   <div className="space-y-2">
-                    <label htmlFor="adminEmail" className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-2">Email Admin</label>
+                    <label htmlFor="adminEmail" className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-2">Email</label>
                     <input 
                       id="adminEmail"
                       type="email"
                       value={email}
-                      disabled
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="seu@email.com"
                       aria-label="Email Admin"
-                      title="Email de Administrador Fixo"
-                      className="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl py-3 px-4 text-sm font-medium text-slate-300 opacity-70 cursor-not-allowed"
+                      className="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl py-3 px-4 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--primary)] transition-colors"
                     />
                   </div>
                   <div className="space-y-2">
@@ -299,7 +325,6 @@ export default function Profile() {
                         onChange={e => setPassword(e.target.value)}
                         placeholder="••••••••"
                         aria-label="Senha Administrativa"
-                        title="Digite sua Senha"
                         className="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 text-sm font-medium text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-colors"
                       />
                     </div>
@@ -311,11 +336,11 @@ export default function Profile() {
                       disabled={authLoading}
                       className="w-full py-4 rounded-xl border-2 border-[var(--primary)] text-[var(--primary)] font-black text-xs uppercase tracking-widest hover:bg-[var(--primary)]/10 transition-colors flex justify-center"
                     >
-                      Cadastrar
+                      Criar Conta
                     </button>
                     <button 
                       onClick={() => handleAuth(false)}
-                      disabled={authLoading || !password}
+                      disabled={authLoading || !password || !email}
                       className="w-full py-4 rounded-xl bg-[var(--primary)] text-white font-black text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_-4px_rgba(99,102,241,0.5)] flex justify-center"
                     >
                       {authLoading ? <Loader2 size={16} className="animate-spin" /> : "Entrar"}
