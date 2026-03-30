@@ -4,9 +4,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Settings, Shield, Bell, HelpCircle, LogOut, 
-  ChevronRight, ArrowLeft, Moon, Sun, Check, Coins 
+  ChevronRight, ArrowLeft, Moon, Sun, Check, Coins, 
+  Lock, Key, Loader2
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 const avatars = [
   "🎮", "🛡️", "🔥", "💎", "🌟", "🦁", "🕊️", "⚓", "👑", "📜",
@@ -16,12 +19,47 @@ const currencies = ["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Mo
 
 export default function Profile() {
   const { preferences, setTheme, setAvatar, setCurrency, user, updateNickname } = useUser();
-  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help">("menu");
+  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth">("menu");
+  const router = useRouter();
+  
+  // States do Login
+  const [email, setEmail] = useState("mediattamoveis@gmail.com");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
+
+  const handleAuth = async (isSignUp: boolean) => {
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthSuccess("");
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setAuthSuccess("Conta criada com sucesso! Você já pode logar.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        setAuthSuccess("Logado! Redirecionando...");
+        setTimeout(() => router.push("/admin"), 1000);
+      }
+    } catch (err: any) {
+      setAuthError(err.message || "Erro de autenticação");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const renderHeader = (title: string) => (
     <div className="flex items-center gap-4 mb-8">
       <button 
-        onClick={() => setActiveTab("menu")}
+        onClick={() => {
+          setActiveTab("menu");
+          setAuthError("");
+          setAuthSuccess("");
+          setPassword("");
+        }}
         aria-label="Voltar ao menu"
         className="p-2 bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
       >
@@ -81,6 +119,12 @@ export default function Profile() {
                 icon={HelpCircle} 
                 color="text-[#22D3EE]" 
                 onClick={() => setActiveTab("help")} 
+              />
+              <MenuButton 
+                label="Acesso Admin" 
+                icon={Lock} 
+                color="text-[#A855F7]" 
+                onClick={() => setActiveTab("adminAuth")} 
               />
             </div>
 
@@ -208,6 +252,75 @@ export default function Profile() {
                <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)]">
                   <h4 className="font-black text-[var(--foreground)] uppercase text-sm mb-2">Problemas técnicos?</h4>
                   <p className="text-xs text-slate-500 leading-relaxed font-medium">Se o jogo travar, tente atualizar a página ou verificar sua conexão com a internet.</p>
+               </div>
+            </div>
+          </motion.div>
+        )}
+        {activeTab === "adminAuth" && (
+          <motion.div
+            key="adminAuth"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            {renderHeader("Acesso Reservado")}
+            <div className="bg-[var(--surface)] p-6 rounded-3xl border border-[var(--border)] shadow-xl space-y-4">
+               <div className="text-center mb-6">
+                 <div className="w-16 h-16 bg-[#A855F7]/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#A855F7]/20">
+                   <Lock size={32} className="text-[#A855F7]" />
+                 </div>
+                 <p className="text-sm font-medium text-slate-400">Área exclusiva para gestão de quizzes.</p>
+               </div>
+
+               {authError && <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase text-center">{authError}</div>}
+               {authSuccess && <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-black uppercase text-center">{authSuccess}</div>}
+
+               <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <label htmlFor="adminEmail" className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-2">Email Admin</label>
+                    <input 
+                      id="adminEmail"
+                      type="email"
+                      value={email}
+                      disabled
+                      aria-label="Email Admin"
+                      title="Email de Administrador Fixo"
+                      className="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl py-3 px-4 text-sm font-medium text-slate-300 opacity-70 cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="adminPass" className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-2">Senha</label>
+                    <div className="relative">
+                      <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input 
+                        id="adminPass"
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        aria-label="Senha Administrativa"
+                        title="Digite sua Senha"
+                        className="w-full bg-[var(--background)] border border-[var(--border)] rounded-xl py-3 pl-12 pr-4 text-sm font-medium text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--border)]">
+                    <button 
+                      onClick={() => handleAuth(true)}
+                      disabled={authLoading}
+                      className="w-full py-4 rounded-xl border-2 border-[var(--primary)] text-[var(--primary)] font-black text-xs uppercase tracking-widest hover:bg-[var(--primary)]/10 transition-colors flex justify-center"
+                    >
+                      Cadastrar
+                    </button>
+                    <button 
+                      onClick={() => handleAuth(false)}
+                      disabled={authLoading || !password}
+                      className="w-full py-4 rounded-xl bg-[var(--primary)] text-white font-black text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_-4px_rgba(99,102,241,0.5)] flex justify-center"
+                    >
+                      {authLoading ? <Loader2 size={16} className="animate-spin" /> : "Entrar"}
+                    </button>
+                  </div>
                </div>
             </div>
           </motion.div>

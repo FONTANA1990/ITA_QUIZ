@@ -1,16 +1,23 @@
 {
   "name": "ITA QUIZ",
-  "short_name": "ITA Quiz",
-  "description": "Quiz interativo premium estilo Kahoot para a galera do ITA.",
+  "short_name": "ITA QUIZ",
+  "description": "Plataforma interativa para quizzes da sua comunidade",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F172A",
-  "theme_color": "#0F172A",
+  "theme_color": "#6366F1",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3408/3408506.png",
+      "src": "/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]

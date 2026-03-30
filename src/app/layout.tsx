@@ -7,10 +7,19 @@ import { UserProvider } from "@/context/UserContext";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
+export const viewport = {
+  themeColor: "#6366F1",
+};
+
 export const metadata: Metadata = {
   title: "ITA QUIZ",
   description: "Experiência de quiz interativa e moderna estilo Kahoot.",
-  manifest: "/manifest.json", // Previsão futura pra PWA
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ITA QUIZ",
+  },
 };
 
 export default function RootLayout({
