@@ -78,7 +78,7 @@ export default function Profile() {
       >
         <ArrowLeft size={20} />
       </button>
-      <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">{title}</h1>
+      <h1 className="text-2xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none">{title}</h1>
     </div>
   );
 

@@ -312,7 +312,7 @@ export default function AdminDashboard() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden shadow-2xl">
               <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
-                <h2 className="font-black text-white italic tracking-tighter uppercase">Membros de Comunidade</h2>
+                <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase">Membros de Comunidade</h2>
                 <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase tracking-widest">
                   <Users size={14} /> {allUsers.length} Logados
                 </div>
