@@ -99,39 +99,6 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         is_correct: isCorrect
       }
     ]);
-
-    if (isCorrect) {
-      // 1. Atualizar Score da Sessão (Quiz)
-      const { data: currentScore } = await supabase
-        .from("scores")
-        .select("total_points")
-        .eq("user_id", contextUser.id)
-        .eq("quiz_id", quizId)
-        .single();
-
-      const { error: scoreErr } = await supabase
-        .from("scores")
-        .update({ total_points: (currentScore?.total_points || 0) + 100 })
-        .eq("user_id", contextUser.id)
-        .eq("quiz_id", quizId);
-
-      // 2. Atualizar Pontos Globais do Usuário
-      const { data: currentUser } = await supabase
-        .from("users")
-        .select("total_points")
-        .eq("id", contextUser.id)
-        .single();
-
-      await supabase
-        .from("users")
-        .update({ total_points: (currentUser?.total_points || 0) + 100 })
-        .eq("id", contextUser.id);
-      
-      if (!scoreErr) {
-        // Se houver uma função para atualizar o contexto localmente, poderíamos chamar aqui
-        // mas o UserContext recarregará na próxima mudança de estado de auth ou refresh
-      }
-    }
   };
 
   if (loading) return (

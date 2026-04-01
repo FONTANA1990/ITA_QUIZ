@@ -75,19 +75,22 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       // 1. Remover scores vinculados
-      await supabase.from("scores").delete().eq("user_id", userId);
+      const { error: sError } = await supabase.from("scores").delete().eq("user_id", userId);
+      if (sError) throw new Error(`Erro ao deletar scores: ${sError.message}`);
+
       // 2. Remover respostas vinculadas
-      await supabase.from("answers").delete().eq("user_id", userId);
+      const { error: aError } = await supabase.from("answers").delete().eq("user_id", userId);
+      if (aError) throw new Error(`Erro ao deletar respostas: ${aError.message}`);
+
       // 3. Remover o usuário da tabela pública
       const { error } = await supabase.from("users").delete().eq("id", userId);
-
       if (error) throw error;
 
       setStatus({ type: "success", msg: "Usuário removido com sucesso!" });
       fetchUsers();
     } catch (err: any) {
       console.error("Erro ao deletar usuário:", err);
-      setStatus({ type: "error", msg: "Erro ao remover usuário. Verifique permissões." });
+      setStatus({ type: "error", msg: `Erro ao remover: ${err.message || "Verifique permissões"}` });
     } finally {
       setLoading(false);
     }
@@ -106,18 +109,21 @@ export default function AdminDashboard() {
     try {
       const anonIds = anonUsers.map(u => u.id);
       
-      // Remover em cascata manualmente se não houver FK setada para CASCADE
-      await supabase.from("scores").delete().in("user_id", anonIds);
-      await supabase.from("answers").delete().in("user_id", anonIds);
-      const { error } = await supabase.from("users").delete().in("id", anonIds);
+      // Remover em cascata manualmente
+      const { error: sError } = await supabase.from("scores").delete().in("user_id", anonIds);
+      if (sError) throw new Error(`Erro ao limpar scores: ${sError.message}`);
 
+      const { error: aError } = await supabase.from("answers").delete().in("user_id", anonIds);
+      if (aError) throw new Error(`Erro ao limpar respostas: ${aError.message}`);
+
+      const { error } = await supabase.from("users").delete().in("id", anonIds);
       if (error) throw error;
 
       setStatus({ type: "success", msg: `${anonUsers.length} usuários removidos!` });
       fetchUsers();
     } catch (err: any) {
       console.error("Erro ao remover anônimos:", err);
-      setStatus({ type: "error", msg: "Erro ao realizar limpeza em massa." });
+      setStatus({ type: "error", msg: `Falha na limpeza: ${err.message || "Favor verificar RLS"}` });
     } finally {
       setLoading(false);
     }
