@@ -50,31 +50,12 @@ export default function Home() {
       let userId: string;
       let finalNickname = nickname.trim();
 
-      if (contextUser) {
-        // Usuário logado via Auth (Supabase Auth)
-        userId = contextUser.id;
-        finalNickname = contextUser.nickname;
-      } else {
-        // Verificar se existe usuário anônimo salvo na máquina
-        const savedUser = localStorage.getItem("ita_quiz_user");
-        const parsed = savedUser ? JSON.parse(savedUser) : null;
-        
-        if (parsed && parsed.nickname === finalNickname) {
-          userId = parsed.id;
-        } else {
-          // Criar novo usuário anônimo
-          const { data: newUser, error: userError } = await supabase
-            .from("users")
-            .insert([{ nickname: finalNickname, role: "player" }])
-            .select()
-            .single();
-
-          if (userError || !newUser) {
-            throw new Error("Ocorreu um erro ao criar seu perfil.");
-          }
-          userId = newUser.id;
-        }
+      if (!contextUser) {
+        throw new Error("Apenas membros logados com e-mail podem entrar no quiz. Vá em 'Acesso de Administrador' ou 'Perfil' para entrar.");
       }
+      
+      userId = contextUser.id;
+      finalNickname = contextUser.nickname;
 
       // 3. Vincular usuário ao quiz (Upsert Score)
       const { error: scoreError } = await supabase
@@ -130,6 +111,13 @@ export default function Home() {
             />
           </div>
           
+          {!contextUser && (
+            <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 text-center text-xs font-bold uppercase tracking-widest leading-relaxed">
+              ⚠️ Login Obrigatório<br/>
+              <span className="opacity-70 text-[10px]">Apenas membros registrados podem participar.</span>
+            </div>
+          )}
+
           <div>
             <input
               type="text"
@@ -137,7 +125,8 @@ export default function Home() {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               maxLength={20}
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-4 text-center font-bold text-lg text-[var(--foreground)] placeholder:text-slate-500 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all shadow-sm"
+              readOnly={!!contextUser}
+              className={`w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-4 text-center font-bold text-lg text-[var(--foreground)] placeholder:text-slate-500 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all shadow-sm ${contextUser ? 'opacity-80' : ''}`}
             />
           </div>
 

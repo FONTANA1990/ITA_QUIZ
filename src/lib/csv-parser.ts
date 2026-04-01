@@ -7,6 +7,7 @@ export type ParsedQuestion = {
     B: string;
     C: string;
     D: string;
+    E?: string;
   };
   correct_option: string;
 };
@@ -34,7 +35,7 @@ export function parseCSV(file: File): Promise<ParsedQuestion[]> {
                 "resposta_correta",
               ];
 
-              // Validação de campos em branco
+              // Validação de campos obrigatórios (A-D)
               for (const field of requiredFields) {
                 if (!row[field]) {
                   throw new Error(`Linha ${lineNum}: campo "${field}" vazio`);
@@ -42,21 +43,33 @@ export function parseCSV(file: File): Promise<ParsedQuestion[]> {
               }
 
               const resposta = String(row.resposta_correta).toUpperCase().trim();
+              const validOptions = ["A", "B", "C", "D"];
+              
+              // Se tiver opcao_e, adiciona E aos válidos
+              if (row.opcao_e) {
+                validOptions.push("E");
+              }
 
-              if (!["A", "B", "C", "D"].includes(resposta)) {
+              if (!validOptions.includes(resposta)) {
                 throw new Error(
-                  `Linha ${lineNum}: resposta inválida ("${resposta}"). Use apenas A, B, C ou D.`
+                  `Linha ${lineNum}: resposta inválida ("${resposta}"). Use apenas ${validOptions.join(", ")}.`
                 );
+              }
+
+              const options: any = {
+                A: String(row.opcao_a).trim(),
+                B: String(row.opcao_b).trim(),
+                C: String(row.opcao_c).trim(),
+                D: String(row.opcao_d).trim(),
+              };
+
+              if (row.opcao_e) {
+                options.E = String(row.opcao_e).trim();
               }
 
               return {
                 question_text: String(row.pergunta).trim(),
-                options: {
-                  A: String(row.opcao_a).trim(),
-                  B: String(row.opcao_b).trim(),
-                  C: String(row.opcao_c).trim(),
-                  D: String(row.opcao_d).trim(),
-                },
+                options,
                 correct_option: resposta,
               };
             });

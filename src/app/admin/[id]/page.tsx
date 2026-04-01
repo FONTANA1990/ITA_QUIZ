@@ -236,19 +236,23 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                   <h2 className="text-5xl font-black leading-tight italic uppercase tracking-tight relative z-10">{currentQuestion.question_text}</h2>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className={`grid gap-4 ${Object.keys(currentQuestion.options).length > 4 ? 'grid-cols-1 md:grid-cols-3' : 'md:grid-cols-2'}`}>
                    {Object.entries(currentQuestion.options).map(([key, value]) => (
-                     <div key={key} className={`p-8 rounded-[2.5rem] border-2 transition-all flex items-center gap-6 ${
+                     <div key={key} className={`p-6 md:p-8 rounded-[2.5rem] border-2 transition-all flex items-center gap-4 md:gap-6 ${
                        key === 'A' ? 'bg-red-500/10 border-red-500/30' : 
                        key === 'B' ? 'bg-blue-500/10 border-blue-500/30' :
-                       key === 'C' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-emerald-500/10 border-emerald-500/30'
+                       key === 'C' ? 'bg-amber-500/10 border-amber-500/30' : 
+                       key === 'D' ? 'bg-emerald-500/10 border-emerald-500/30' : 
+                       'bg-purple-500/10 border-purple-500/30'
                      }`}>
-                        <div className={`w-14 h-14 flex items-center justify-center rounded-2xl font-black text-2xl text-white shadow-lg ${
+                        <div className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-2xl font-black text-xl md:text-2xl text-white shadow-lg shrink-0 ${
                            key === 'A' ? 'bg-red-500' : 
                            key === 'B' ? 'bg-blue-500' :
-                           key === 'C' ? 'bg-amber-500' : 'bg-emerald-500'
+                           key === 'C' ? 'bg-amber-500' : 
+                           key === 'D' ? 'bg-emerald-500' : 
+                           'bg-purple-500'
                         }`}>{key}</div>
-                        <span className="text-xl font-black uppercase italic tracking-tighter opacity-90">{value as string}</span>
+                        <span className="text-lg md:text-xl font-black uppercase italic tracking-tighter opacity-90 break-words line-clamp-4">{value as string}</span>
                      </div>
                    ))}
                 </div>

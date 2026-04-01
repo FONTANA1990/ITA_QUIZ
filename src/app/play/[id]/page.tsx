@@ -99,6 +99,39 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         is_correct: isCorrect
       }
     ]);
+
+    if (isCorrect) {
+      // 1. Atualizar Score da Sessão (Quiz)
+      const { data: currentScore } = await supabase
+        .from("scores")
+        .select("total_points")
+        .eq("user_id", contextUser.id)
+        .eq("quiz_id", quizId)
+        .single();
+
+      const { error: scoreErr } = await supabase
+        .from("scores")
+        .update({ total_points: (currentScore?.total_points || 0) + 100 })
+        .eq("user_id", contextUser.id)
+        .eq("quiz_id", quizId);
+
+      // 2. Atualizar Pontos Globais do Usuário
+      const { data: currentUser } = await supabase
+        .from("users")
+        .select("total_points")
+        .eq("id", contextUser.id)
+        .single();
+
+      await supabase
+        .from("users")
+        .update({ total_points: (currentUser?.total_points || 0) + 100 })
+        .eq("id", contextUser.id);
+      
+      if (!scoreErr) {
+        // Se houver uma função para atualizar o contexto localmente, poderíamos chamar aqui
+        // mas o UserContext recarregará na próxima mudança de estado de auth ou refresh
+      }
+    }
   };
 
   if (loading) return (
@@ -184,24 +217,27 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                     </h2>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 flex-1">
+                  <div className={`grid gap-3 flex-1 ${Object.keys(currentQuestion.options).length > 4 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'}`}>
                     {Object.entries(currentQuestion.options).map(([key, value]) => (
                       <motion.button
                         key={key}
                         whileTap={{ scale: 0.95 }}
                         disabled={isTimeUp}
                         onClick={() => submitAnswer(key)}
-                        className={`p-4 md:p-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-2 md:gap-4 transition-all shadow-xl group disabled:opacity-50 min-h-[140px] ${
+                        className={`p-4 md:p-6 rounded-3xl border-2 flex flex-col items-center justify-center gap-2 md:gap-3 transition-all shadow-xl group disabled:opacity-50 min-h-[120px] h-full ${
                           key === "A" ? "bg-[#EF4444] border-red-400/50" :
                           key === "B" ? "bg-[#3B82F6] border-blue-400/50" :
                           key === "C" ? "bg-[#F59E0B] border-amber-400/50" :
-                          "bg-[#10B981] border-emerald-400/50"
+                          key === "D" ? "bg-[#10B981] border-emerald-400/50" :
+                          "bg-[#A855F7] border-purple-400/50" // Cor para E
                         } text-white`}
                       >
-                         <div className="bg-white/20 w-12 h-12 flex items-center justify-center rounded-2xl font-black text-2xl group-hover:bg-white/30 transition-colors">
+                         <div className="bg-white/20 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl font-black text-xl md:text-2xl group-hover:bg-white/30 transition-colors shrink-0">
                            {key}
                          </div>
-                         <span className="font-extrabold uppercase italic tracking-tighter text-xs md:text-sm text-center line-clamp-3 leading-tight px-1">{value as string}</span>
+                         <span className="font-extrabold uppercase italic tracking-tighter text-[10px] md:text-sm text-center leading-tight px-1 word-break break-words max-w-full">
+                           {value as string}
+                         </span>
                       </motion.button>
                     ))}
                   </div>

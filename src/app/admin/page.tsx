@@ -62,7 +62,8 @@ export default function AdminDashboard() {
       setStatus({ type: "success", msg: "Permissões atualizadas com sucesso!" });
       fetchUsers();
     } catch (err: any) {
-      setStatus({ type: "error", msg: "Erro ao atualizar permissão." });
+      console.error("Erro ao atualizar cargo:", err);
+      setStatus({ type: "error", msg: `Erro ao atualizar permissão: ${err.message || 'Verifique o RLS no Supabase'}` });
     } finally {
       setLoading(false);
     }
@@ -92,15 +93,45 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteAnonymous = async () => {
+    const anonUsers = allUsers.filter(u => !u.email);
+    if (anonUsers.length === 0) {
+      alert("Nenhum usuário sem e-mail encontrado.");
+      return;
+    }
+
+    if (!window.confirm(`Deseja realmente excluir TODOS os ${anonUsers.length} usuários que não possuem e-mail? Isso removerá seus históricos também.`)) return;
+
+    setLoading(true);
+    try {
+      const anonIds = anonUsers.map(u => u.id);
+      
+      // Remover em cascata manualmente se não houver FK setada para CASCADE
+      await supabase.from("scores").delete().in("user_id", anonIds);
+      await supabase.from("answers").delete().in("user_id", anonIds);
+      const { error } = await supabase.from("users").delete().in("id", anonIds);
+
+      if (error) throw error;
+
+      setStatus({ type: "success", msg: `${anonUsers.length} usuários removidos!` });
+      fetchUsers();
+    } catch (err: any) {
+      console.error("Erro ao remover anônimos:", err);
+      setStatus({ type: "error", msg: "Erro ao realizar limpeza em massa." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const downloadTemplate = () => {
-    const headers = "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,resposta_correta\n";
-    const example = "Qual a capital da França?,Paris,Londres,Berlim,Madrid,A";
+    const headers = "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,opcao_e,resposta_correta\n";
+    const example = "Qual a capital da França?,Paris,Londres,Berlim,Madrid,,A\nPergunta com 5 opções,Opção 1,Opção 2,Opção 3,Opção 4,Opção 5,E";
     const csvContent = "\uFEFF" + headers + example;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "modelo_quiz_ita.csv");
+    link.setAttribute("download", "modelo_quiz_ita_v2.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -327,8 +358,16 @@ export default function AdminDashboard() {
             <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden shadow-2xl">
               <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
                 <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase">Membros de Comunidade</h2>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                  <Users size={14} /> {allUsers.length} Logados
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={handleDeleteAnonymous}
+                    className="flex items-center gap-2 text-[9px] bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-xl border border-red-500/20 transition-all font-black uppercase tracking-widest"
+                  >
+                    <Trash2 size={12} /> Limpar Anônimos
+                  </button>
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                    <Users size={14} /> {allUsers.length} Logados
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 md:p-6 bg-[var(--background)]/20">
