@@ -411,7 +411,14 @@ export default function AdminDashboard() {
                           />
                         </div>
                         
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-2 pt-2">
+                          <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
+                            Opções de Resposta 
+                            <span className="text-[8px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full border border-blue-500/20 italic">
+                              Dica: Clique na letra (A-E) para marcar a correta
+                            </span>
+                          </label>
+                          <div className="grid grid-cols-1 gap-2">
                           {['A', 'B', 'C', 'D', 'E'].map(l => (
                             <div key={l} className="flex gap-2 items-center">
                               <button 
@@ -439,6 +446,7 @@ export default function AdminDashboard() {
                             </div>
                           ))}
                         </div>
+                      </div>
 
                         {status && status.msg.includes("opção") && (
                           <p className="text-[10px] font-bold text-red-500 animate-pulse text-center">{status.msg}</p>
