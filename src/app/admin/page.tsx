@@ -17,8 +17,17 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"quizzes" | "users" | "settings">("quizzes");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [uploadMode, setUploadMode] = useState<"file" | "text">("file");
+  const [uploadMode, setUploadMode] = useState<"file" | "text" | "manual">("file");
   const [csvRawText, setCsvRawText] = useState("");
+  const [manualQuestion, setManualQuestion] = useState<{
+    question_text: string,
+    options: { A: string, B: string, C: string, D: string, E: string },
+    correct_option: string
+  }>({
+    question_text: "",
+    options: { A: "", B: "", C: "", D: "", E: "" },
+    correct_option: ""
+  });
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState<number | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -166,6 +175,37 @@ export default function AdminDashboard() {
     setPreviewQuestions([]);
     setIsPreviewing(false);
     setStatus(null);
+    setManualQuestion({
+      question_text: "",
+      options: { A: "", B: "", C: "", D: "", E: "" },
+      correct_option: ""
+    });
+  };
+
+  const handleManualAdd = () => {
+    const { question_text, options, correct_option } = manualQuestion;
+    
+    if (!question_text || !options.A || !options.B || !options.C || !options.D || !correct_option) {
+      setStatus({ type: "error", msg: "Preencha a pergunta, pelo menos 4 opções e selecione a resposta correta!" });
+      return;
+    }
+
+    setPreviewQuestions([...previewQuestions, { ...manualQuestion }]);
+    setIsPreviewing(true);
+    
+    // Reset manual form but keep current options structure
+    setManualQuestion({
+      question_text: "",
+      options: { A: "", B: "", C: "", D: "", E: "" },
+      correct_option: ""
+    });
+    setStatus({ type: "success", msg: "Pergunta adicionada à lista!" });
+  };
+
+  const removeQuestionFromPreview = (idx: number) => {
+    const updated = previewQuestions.filter((_, i) => i !== idx);
+    setPreviewQuestions(updated);
+    if (updated.length === 0) setIsPreviewing(false);
   };
 
   const handleCreateQuiz = async () => {
@@ -304,16 +344,22 @@ export default function AdminDashboard() {
                   <div className="pt-2">
                     <div className="flex p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] mb-4">
                       <button 
-                        onClick={() => setUploadMode("file")}
+                        onClick={() => { setUploadMode("file"); setIsPreviewing(false); }}
                         className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'file' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
                       >
                         Arquivo
                       </button>
                       <button 
-                        onClick={() => setUploadMode("text")}
+                        onClick={() => { setUploadMode("text"); setIsPreviewing(false); }}
                         className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'text' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
                       >
-                        Colar Texto
+                        Colar CSV
+                      </button>
+                      <button 
+                        onClick={() => { setUploadMode("manual"); }}
+                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'manual' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                      >
+                        Passo a Passo
                       </button>
                     </div>
 
@@ -328,7 +374,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </div>
-                    ) : (
+                    ) : uploadMode === "text" ? (
                       <div className="space-y-1.5">
                         <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Cole o CSV aqui</label>
                         <textarea
@@ -338,10 +384,52 @@ export default function AdminDashboard() {
                           className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-mono text-[10px] h-32 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
                         />
                       </div>
+                    ) : (
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Sua Pergunta</label>
+                          <textarea
+                            placeholder="Digite a pergunta aqui..."
+                            value={manualQuestion.question_text}
+                            onChange={(e) => setManualQuestion({ ...manualQuestion, question_text: e.target.value })}
+                            className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-xs h-24 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-2">
+                          {['A', 'B', 'C', 'D', 'E'].map(l => (
+                            <div key={l} className="flex gap-2 items-center">
+                              <button 
+                                onClick={() => setManualQuestion({ ...manualQuestion, correct_option: l })}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition-all ${manualQuestion.correct_option === l ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-[var(--background)] text-slate-500 border border-[var(--border)] opacity-40'}`}
+                              >
+                                {l}
+                              </button>
+                              <input 
+                                type="text"
+                                placeholder={`Opção ${l}${l === 'E' ? ' (Opcional)' : ''}`}
+                                value={manualQuestion.options[l as 'A'|'B'|'C'|'D'|'E']}
+                                onChange={(e) => setManualQuestion({
+                                  ...manualQuestion,
+                                  options: { ...manualQuestion.options, [l]: e.target.value }
+                                })}
+                                className="flex-1 bg-[var(--background)] border border-[var(--border)] px-4 py-2 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={handleManualAdd}
+                          className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/30 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                          <Plus size={14} /> ADICIONAR PERGUNTA
+                        </button>
+                      </div>
                     )}
                   </div>
 
-                  {!isPreviewing ? (
+                  {uploadMode !== 'manual' && !isPreviewing ? (
                     <button
                       onClick={handlePreview}
                       disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
@@ -353,12 +441,14 @@ export default function AdminDashboard() {
                         </>
                       )}
                     </button>
-                  ) : (
+                  ) : null}
+                  
+                  {isPreviewing && (
                     <button
                       onClick={handleResetPreview}
                       className="w-full bg-slate-500/10 text-slate-500 p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] border border-slate-500/20 transition-all active:scale-95 flex justify-center items-center gap-2"
                     >
-                      <RotateCcw size={16} /> LIMPAR E CORRIGIR
+                      <RotateCcw size={16} />{uploadMode === 'manual' ? 'ESVAZIAR LISTA' : 'LIMPAR E CORRIGIR'}
                     </button>
                   )}
                 </div>
@@ -423,6 +513,13 @@ export default function AdminDashboard() {
                                   })}
                                 </div>
                               </div>
+                              <button 
+                                onClick={() => removeQuestionFromPreview(i)}
+                                className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-all h-fit self-center"
+                                title="Remover esta pergunta"
+                              >
+                                <Trash2 size={18} />
+                              </button>
                             </div>
                           </div>
                         ))}
