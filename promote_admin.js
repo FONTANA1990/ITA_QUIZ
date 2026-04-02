@@ -6,7 +6,7 @@ async function promote() {
   try {
     await client.connect();
     // Promover fontana.jur@gmail.com e qualquer usuário chamado 'Fontana' para admin
-    const res = await client.query("UPDATE public.users SET role = 'admin' WHERE email = 'fontana.jur@gmail.com' OR nickname = 'Fontana'");
+    const res = await client.query("UPDATE public.users SET role = 'admin' WHERE email = 'fontana.jur@gmail.com'");
     console.log(`✅ Usuários promovidos: ${res.rowCount}`);
     
     // Verificar se agora existe pelo menos um admin

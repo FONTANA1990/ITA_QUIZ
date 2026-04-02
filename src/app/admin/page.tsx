@@ -76,7 +76,10 @@ export default function AdminDashboard() {
     try {
       // Com a ativação do ON DELETE CASCADE no banco, 
       // deletar o usuário já limpa automaticamente 'scores' e 'answers'.
-      const { error } = await supabase.from("users").delete().eq("id", userId);
+      // Usar RPC para deletar Auth + Public de forma atômica
+      const { error } = await supabase.rpc("delete_user_by_admin", {
+        target_user_id: userId
+      });
       if (error) throw error;
 
       setStatus({ type: "success", msg: "Usuário removido com sucesso!" });
@@ -103,8 +106,10 @@ export default function AdminDashboard() {
       const anonIds = anonUsers.map(u => u.id);
       
       // O banco de dados agora gerencia a cascata automaticamente
-      const { error } = await supabase.from("users").delete().in("id", anonIds);
-      if (error) throw error;
+      // O banco de dados agora gerencia a cascata automaticamente via RPC
+      for (const id of anonIds) {
+        await supabase.rpc("delete_user_by_admin", { target_user_id: id });
+      }
 
       setStatus({ type: "success", msg: `${anonUsers.length} usuários removidos!` });
       fetchUsers();
