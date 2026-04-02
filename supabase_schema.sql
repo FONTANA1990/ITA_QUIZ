@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS questions (
 
 CREATE TABLE IF NOT EXISTS answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   question_id UUID REFERENCES questions(id) ON DELETE CASCADE,
   selected_option TEXT,
   is_correct BOOLEAN,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS answers (
 
 CREATE TABLE IF NOT EXISTS scores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
   total_points INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -107,12 +107,30 @@ ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 
+-- 3. Funções de Auxílio
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (
+    SELECT role = 'admin' 
+    FROM public.users 
+    WHERE id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Políticas
 DROP POLICY IF EXISTS "Public Profiles Access" ON users;
 CREATE POLICY "Public Profiles Access" ON users FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow Insert User" ON users;
 CREATE POLICY "Allow Insert User" ON users FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can delete users" ON users;
+CREATE POLICY "Admins can delete users" ON users FOR DELETE USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can update users" ON users;
+CREATE POLICY "Admins can update users" ON users FOR UPDATE USING (public.is_admin());
 
 DROP POLICY IF EXISTS "View Quizzes" ON quizzes;
 CREATE POLICY "View Quizzes" ON quizzes FOR SELECT USING (true);
@@ -132,6 +150,9 @@ CREATE POLICY "player can insert own answers" ON answers FOR INSERT WITH CHECK (
 DROP POLICY IF EXISTS "View Answers" ON answers;
 CREATE POLICY "View Answers" ON answers FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins can delete answers" ON answers;
+CREATE POLICY "Admins can delete answers" ON answers FOR DELETE USING (public.is_admin());
+
 DROP POLICY IF EXISTS "block manual score update" ON scores;
 CREATE POLICY "block manual score update" ON scores FOR UPDATE USING (false);
 
@@ -140,6 +161,9 @@ CREATE POLICY "View Scores" ON scores FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow players to join" ON scores;
 CREATE POLICY "Allow players to join" ON scores FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can delete scores" ON scores;
+CREATE POLICY "Admins can delete scores" ON scores FOR DELETE USING (public.is_admin());
 
 -- 4. Gatilho para Gerar PIN Automático (Garante que nunca fique null)
 CREATE OR REPLACE FUNCTION generate_quiz_pin()

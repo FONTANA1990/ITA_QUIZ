@@ -74,15 +74,8 @@ export default function AdminDashboard() {
 
     setLoading(true);
     try {
-      // 1. Remover scores vinculados
-      const { error: sError } = await supabase.from("scores").delete().eq("user_id", userId);
-      if (sError) throw new Error(`Erro ao deletar scores: ${sError.message}`);
-
-      // 2. Remover respostas vinculadas
-      const { error: aError } = await supabase.from("answers").delete().eq("user_id", userId);
-      if (aError) throw new Error(`Erro ao deletar respostas: ${aError.message}`);
-
-      // 3. Remover o usuário da tabela pública
+      // Com a ativação do ON DELETE CASCADE no banco, 
+      // deletar o usuário já limpa automaticamente 'scores' e 'answers'.
       const { error } = await supabase.from("users").delete().eq("id", userId);
       if (error) throw error;
 
@@ -109,13 +102,7 @@ export default function AdminDashboard() {
     try {
       const anonIds = anonUsers.map(u => u.id);
       
-      // Remover em cascata manualmente
-      const { error: sError } = await supabase.from("scores").delete().in("user_id", anonIds);
-      if (sError) throw new Error(`Erro ao limpar scores: ${sError.message}`);
-
-      const { error: aError } = await supabase.from("answers").delete().in("user_id", anonIds);
-      if (aError) throw new Error(`Erro ao limpar respostas: ${aError.message}`);
-
+      // O banco de dados agora gerencia a cascata automaticamente
       const { error } = await supabase.from("users").delete().in("id", anonIds);
       if (error) throw error;
 
