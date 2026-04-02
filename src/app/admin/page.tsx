@@ -393,14 +393,13 @@ export default function AdminDashboard() {
                               <span className="text-2xl font-black text-slate-500/20 tabular-nums italic">{(i + 1).toString().padStart(2, '0')}</span>
                               <div className="flex-1 space-y-4">
                                 <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed">
-                                  {q.pergunta || q.Pergunta || "Texto da pergunta não encontrado"}
+                                  {q.question_text || "Texto da pergunta não encontrado"}
                                 </p>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {['a', 'b', 'c', 'd', 'e'].map(opt => {
-                                    const optionKey = `opcao_${opt}`;
-                                    const optionText = q[optionKey];
-                                    const isCorrect = q.resposta_correta?.toLowerCase() === opt;
+                                  {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                    const optionText = q.options?.[opt];
+                                    const isCorrect = q.correct_option === opt;
                                     
                                     if (!optionText) return null;
 
