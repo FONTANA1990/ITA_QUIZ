@@ -185,8 +185,15 @@ export default function AdminDashboard() {
   const handleManualAdd = () => {
     const { question_text, options, correct_option } = manualQuestion;
     
-    if (!question_text || !options.A || !options.B || !options.C || !options.D || !correct_option) {
-      setStatus({ type: "error", msg: "Preencha a pergunta, pelo menos 4 opções e selecione a resposta correta!" });
+    // Agora requer apenas pergunta, pelo menos Opção A e B, e a resposta correta
+    if (!question_text || !options.A || !options.B || !correct_option) {
+      setStatus({ type: "error", msg: "Preencha a pergunta, as opções A e B, e selecione a resposta correta!" });
+      return;
+    }
+
+    // Se uma opção estiver selecionada como correta mas o texto estiver vazio
+    if (!options[correct_option as keyof typeof options]) {
+      setStatus({ type: "error", msg: `A opção ${correct_option} foi marcada como correta, mas o texto dela está vazio!` });
       return;
     }
 
@@ -210,6 +217,13 @@ export default function AdminDashboard() {
 
   const handleCreateQuiz = async () => {
     if (previewQuestions.length === 0) return;
+    
+    if (!title.trim()) {
+      setStatus({ type: "error", msg: "Dê um título para o seu Quiz antes de criar!" });
+      const titleInput = document.getElementById('quiz-title-input');
+      titleInput?.focus();
+      return;
+    }
 
     setLoading(true);
     setStatus(null);
@@ -218,7 +232,7 @@ export default function AdminDashboard() {
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
         .insert([{ 
-          title, 
+          title: title.trim(), 
           status: "waiting", 
           is_active: false,
           timer_per_question: timer
@@ -327,6 +341,7 @@ export default function AdminDashboard() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Título do Quiz</label>
                     <input
+                      id="quiz-title-input"
                       type="text"
                       placeholder="Ex: Histórias Bíblicas"
                       value={title}
@@ -401,7 +416,11 @@ export default function AdminDashboard() {
                             <div key={l} className="flex gap-2 items-center">
                               <button 
                                 onClick={() => setManualQuestion({ ...manualQuestion, correct_option: l })}
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition-all ${manualQuestion.correct_option === l ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-[var(--background)] text-slate-500 border border-[var(--border)] opacity-40'}`}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition-all border-2 ${
+                                  manualQuestion.correct_option === l 
+                                    ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
+                                    : 'bg-[var(--background)] text-slate-500 border-[var(--border)] opacity-40 hover:opacity-100'
+                                }`}
                               >
                                 {l}
                               </button>
@@ -413,17 +432,23 @@ export default function AdminDashboard() {
                                   ...manualQuestion,
                                   options: { ...manualQuestion.options, [l]: e.target.value }
                                 })}
-                                className="flex-1 bg-[var(--background)] border border-[var(--border)] px-4 py-2 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all"
+                                className={`flex-1 bg-[var(--background)] border px-4 py-2 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all ${
+                                  manualQuestion.correct_option === l ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)]'
+                                }`}
                               />
                             </div>
                           ))}
                         </div>
 
+                        {status && status.msg.includes("opção") && (
+                          <p className="text-[10px] font-bold text-red-500 animate-pulse text-center">{status.msg}</p>
+                        )}
+
                         <button
                           onClick={handleManualAdd}
                           className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/30 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
                         >
-                          <Plus size={14} /> ADICIONAR PERGUNTA
+                          <Plus size={14} /> ADICIONAR À LISTA
                         </button>
                       </div>
                     )}
