@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [timer, setTimer] = useState<number | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const router = useRouter();
 
@@ -135,7 +137,7 @@ export default function AdminDashboard() {
     if (e.target.files) setFile(e.target.files[0]);
   };
 
-  const handleCreateQuiz = async () => {
+  const handlePreview = async () => {
     const csvInput = uploadMode === "file" ? file : csvRawText;
     
     if (!title || !csvInput) {
@@ -148,7 +150,31 @@ export default function AdminDashboard() {
 
     try {
       const questionsData = await parseCSV(csvInput as any);
+      if (questionsData.length === 0) throw new Error("A tabela parece estar vazia ou mal formatada.");
       
+      setPreviewQuestions(questionsData);
+      setIsPreviewing(true);
+      setStatus({ type: "success", msg: `${questionsData.length} perguntas processadas com sucesso!` });
+    } catch (err: any) {
+      setStatus({ type: "error", msg: err.message || "Erro ao processar os dados." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPreview = () => {
+    setPreviewQuestions([]);
+    setIsPreviewing(false);
+    setStatus(null);
+  };
+
+  const handleCreateQuiz = async () => {
+    if (previewQuestions.length === 0) return;
+
+    setLoading(true);
+    setStatus(null);
+
+    try {
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
         .insert([{ 
@@ -165,7 +191,7 @@ export default function AdminDashboard() {
       const pin = quiz.id.slice(0, 6).toUpperCase();
       await supabase.from("quizzes").update({ pin }).eq("id", quiz.id);
 
-      const formattedQuestions = questionsData.map((q, idx) => ({
+      const formattedQuestions = previewQuestions.map((q, idx) => ({
         ...q,
         quiz_id: quiz.id,
         order_index: idx
@@ -315,15 +341,117 @@ export default function AdminDashboard() {
                     )}
                   </div>
 
-                  <button
-                    onClick={handleCreateQuiz}
-                    disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
-                    className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all active:scale-95"
-                  >
-                    {loading ? <Loader2 className="animate-spin" /> : "CRIAR PARTIDA 🚀"}
-                  </button>
+                  {!isPreviewing ? (
+                    <button
+                      onClick={handlePreview}
+                      disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
+                      className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-2"
+                    >
+                      {loading ? <Loader2 className="animate-spin" /> : (
+                        <>
+                          <FileText size={16} /> VISUALIZAR PERGUNTAS
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleResetPreview}
+                      className="w-full bg-slate-500/10 text-slate-500 p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] border border-slate-500/20 transition-all active:scale-95 flex justify-center items-center gap-2"
+                    >
+                      <RotateCcw size={16} /> LIMPAR E CORRIGIR
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {/* Preview Cards Section - Better for Mobile */}
+              <AnimatePresence>
+                {isPreviewing && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="md:col-span-3 space-y-6"
+                  >
+                    <div className="bg-[var(--surface)] p-6 md:p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                          <h2 className="text-2xl font-black text-[var(--foreground)] italic uppercase tracking-tighter leading-none mb-2">Conferência de Dados</h2>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">Confira se todas as perguntas foram lidas corretamente antes de finalizar</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <div className="bg-[var(--primary)]/10 px-4 py-2 rounded-2xl border border-[var(--primary)]/20 text-[var(--primary)] font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                            <FileText size={14} /> {previewQuestions.length} QUESTÕES
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {previewQuestions.map((q, i) => (
+                          <div key={i} className="bg-[var(--background)]/40 p-5 md:p-6 rounded-3xl border border-[var(--border)]/50 hover:border-[var(--primary)] transition-all group">
+                            <div className="flex gap-4">
+                              <span className="text-2xl font-black text-slate-500/20 tabular-nums italic">{(i + 1).toString().padStart(2, '0')}</span>
+                              <div className="flex-1 space-y-4">
+                                <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed">
+                                  {q.pergunta || q.Pergunta || "Texto da pergunta não encontrado"}
+                                </p>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {['a', 'b', 'c', 'd', 'e'].map(opt => {
+                                    const optionKey = `opcao_${opt}`;
+                                    const optionText = q[optionKey];
+                                    const isCorrect = q.resposta_correta?.toLowerCase() === opt;
+                                    
+                                    if (!optionText) return null;
+
+                                    return (
+                                      <div key={opt} className={`flex items-start gap-2 p-3 rounded-2xl border transition-all ${
+                                        isCorrect 
+                                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                          : 'bg-[var(--background)] border-[var(--border)]/30 text-slate-500'
+                                      }`}>
+                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black uppercase text-[10px] border shadow-sm ${
+                                          isCorrect ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-[var(--surface)] text-slate-500 border-[var(--border)]'
+                                        }`}>
+                                          {opt}
+                                        </span>
+                                        <span className={`text-[11px] font-bold leading-tight pt-1 ${isCorrect ? 'text-emerald-500' : 'text-slate-500'}`}>
+                                          {optionText}
+                                        </span>
+                                        {isCorrect && <CheckCircle2 size={14} className="ml-auto flex-shrink-0" />}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-8 grid md:grid-cols-2 gap-4">
+                        <button
+                          onClick={handleResetPreview}
+                          className="w-full bg-slate-500/5 text-slate-500 p-5 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border border-[var(--border)] transition-all hover:bg-slate-500/10 active:scale-95 flex justify-center items-center gap-2"
+                        >
+                          <RotateCcw size={16} /> LIMPAR E CORRIGIR
+                        </button>
+                        <button
+                          onClick={handleCreateQuiz}
+                          disabled={loading}
+                          className="w-full bg-[var(--primary)] text-white p-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-[0_10px_30px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_40px_rgba(234,179,8,0.4)] disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-3"
+                        >
+                          {loading ? <Loader2 className="animate-spin" /> : (
+                            <>
+                              CONFIRMAR E CRIAR AGORA 🚀
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="md:col-span-2 space-y-4">
