@@ -17,6 +17,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<"quizzes" | "users" | "settings">("quizzes");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [uploadMode, setUploadMode] = useState<"file" | "text">("file");
+  const [csvRawText, setCsvRawText] = useState("");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState<number | null>(null);
   const [quizzes, setQuizzes] = useState<any[]>([]);
@@ -134,8 +136,10 @@ export default function AdminDashboard() {
   };
 
   const handleCreateQuiz = async () => {
-    if (!title || !file) {
-      setStatus({ type: "error", msg: "Preencha o título e selecione o CSV!" });
+    const csvInput = uploadMode === "file" ? file : csvRawText;
+    
+    if (!title || !csvInput) {
+      setStatus({ type: "error", msg: uploadMode === "file" ? "Preencha o título e selecione o CSV!" : "Preencha o título e cole o texto do CSV!" });
       return;
     }
 
@@ -143,7 +147,7 @@ export default function AdminDashboard() {
     setStatus(null);
 
     try {
-      const questionsData = await parseCSV(file);
+      const questionsData = await parseCSV(csvInput as any);
       
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
@@ -271,20 +275,49 @@ export default function AdminDashboard() {
                     </button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="csv-upload" className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Arquivo CSV</label>
-                    <div className="relative group">
-                      <input id="csv-upload" type="file" accept=".csv" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                      <div className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${file ? "bg-[var(--primary)]/5 border-[var(--primary)]/30" : "bg-[var(--background)] border-[var(--border)] text-slate-500"}`}>
-                        {file ? <CheckCircle2 className="text-[var(--primary)]" /> : <Upload size={20} />}
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-center truncate w-full px-2">{file ? file.name : "Selecionar Arquivo"}</span>
-                      </div>
+                  <div className="pt-2">
+                    <div className="flex p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] mb-4">
+                      <button 
+                        onClick={() => setUploadMode("file")}
+                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'file' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                      >
+                        Arquivo
+                      </button>
+                      <button 
+                        onClick={() => setUploadMode("text")}
+                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'text' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                      >
+                        Colar Texto
+                      </button>
                     </div>
+
+                    {uploadMode === "file" ? (
+                      <div className="space-y-1.5">
+                        <label htmlFor="csv-upload" className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Arquivo CSV</label>
+                        <div className="relative group">
+                          <input id="csv-upload" type="file" accept=".csv" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          <div className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${file ? "bg-[var(--primary)]/5 border-[var(--primary)]/30" : "bg-[var(--background)] border-[var(--border)] text-slate-500"}`}>
+                            {file ? <CheckCircle2 className="text-[var(--primary)]" /> : <Upload size={20} />}
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-center truncate w-full px-2">{file ? file.name : "Selecionar Arquivo"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Cole o CSV aqui</label>
+                        <textarea
+                          placeholder="pergunta,opcao_a,opcao_b...&#10;Pergunta 1,A,B,C,D,E,A"
+                          value={csvRawText}
+                          onChange={(e) => setCsvRawText(e.target.value)}
+                          className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-mono text-[10px] h-32 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <button
                     onClick={handleCreateQuiz}
-                    disabled={loading || !title || !file}
+                    disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
                     className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all active:scale-95"
                   >
                     {loading ? <Loader2 className="animate-spin" /> : "CRIAR PARTIDA 🚀"}

@@ -12,9 +12,9 @@ export type ParsedQuestion = {
   correct_option: string;
 };
 
-export function parseCSV(file: File): Promise<ParsedQuestion[]> {
+export function parseCSV(input: File | string): Promise<ParsedQuestion[]> {
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
+    Papa.parse(input as any, {
       header: true,
       skipEmptyLines: true,
       transformHeader: (header) => header.trim().toLowerCase(),
