@@ -13,8 +13,8 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
 export default function AdminDashboard() {
-  const { user: currentUser } = useUser();
-  const [activeTab, setActiveTab] = useState<"quizzes" | "users">("quizzes");
+  const { user: currentUser, globalSettings, updateGlobalSetting } = useUser();
+  const [activeTab, setActiveTab] = useState<"quizzes" | "users" | "settings">("quizzes");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,9 +74,6 @@ export default function AdminDashboard() {
 
     setLoading(true);
     try {
-      // Com a ativação do ON DELETE CASCADE no banco, 
-      // deletar o usuário já limpa automaticamente 'scores' e 'answers'.
-      // Usar RPC para deletar Auth + Public de forma atômica
       const { error } = await supabase.rpc("delete_user_by_admin", {
         target_user_id: userId
       });
@@ -104,9 +101,6 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const anonIds = anonUsers.map(u => u.id);
-      
-      // O banco de dados agora gerencia a cascata automaticamente
-      // O banco de dados agora gerencia a cascata automaticamente via RPC
       for (const id of anonIds) {
         await supabase.rpc("delete_user_by_admin", { target_user_id: id });
       }
@@ -186,32 +180,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleResetQuiz = async (id: string) => {
-    if (!window.confirm("Isso apagará todas as respostas e scores deste quiz. Deseja continuar?")) return;
-    
-    setLoading(true);
-    try {
-      await supabase.from("scores").delete().eq("quiz_id", id);
-      const { data: questions } = await supabase.from("questions").select("id").eq("quiz_id", id);
-      if (questions && questions.length > 0) {
-        const qIds = questions.map(q => q.id);
-        await supabase.from("answers").delete().in("question_id", qIds);
-      }
-      await supabase.from("quizzes").update({ 
-        status: "waiting", 
-        current_question_index: 0, 
-        question_started_at: null 
-      }).eq("id", id);
-      
-      fetchQuizzes();
-      setStatus({ type: "success", msg: "Partida reiniciada com sucesso!" });
-    } catch (err: any) {
-      setStatus({ type: "error", msg: "Erro ao reiniciar quiz." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteQuiz = async (id: string) => {
     if (!window.confirm("Tem certeza que deseja excluir permanentemente este quiz?")) return;
     
@@ -219,18 +187,13 @@ export default function AdminDashboard() {
     setStatus(null);
     try {
       const { error } = await supabase.from("quizzes").delete().eq("id", id);
-      
-      if (error) {
-        console.error("Erro ao deletar quiz:", error);
-        setStatus({ type: "error", msg: `Erro ao excluir: ${error.message}` });
-        return;
-      }
+      if (error) throw error;
 
       fetchQuizzes();
       setStatus({ type: "success", msg: "Quiz excluído com sucesso!" });
     } catch (err: any) {
-      console.error("Catch erro deletar quiz:", err);
-      setStatus({ type: "error", msg: "Erro inesperado ao excluir quiz." });
+      console.error("Erro ao deletar quiz:", err);
+      setStatus({ type: "error", msg: "Erro ao excluir quiz." });
     } finally {
       setLoading(false);
     }
@@ -259,14 +222,18 @@ export default function AdminDashboard() {
             >
               Usuários
             </button>
+            <button 
+              onClick={() => setActiveTab("settings")}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'settings' ? 'bg-[var(--primary)] text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+            >
+              Configurações
+            </button>
           </div>
         </div>
 
         {activeTab === "quizzes" ? (
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Seção de Quizzes (Original) */}
             <div className="md:col-span-1 space-y-6">
-              {/* Criar Novo Quiz */}
               <div className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
                 <div className="flex items-center gap-3 mb-6">
                    <div className="bg-[var(--primary)]/10 p-2 rounded-xl text-[var(--primary)]">
@@ -287,7 +254,6 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  {/* ... resto do form de quiz ... */}
                   <div className="space-y-1.5 pt-2">
                     <button onClick={downloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest flex items-center gap-1">
                       <Download size={12} /> Baixar Modelo CSV
@@ -333,7 +299,6 @@ export default function AdminDashboard() {
                       onClick={() => router.push(`/admin/${q.id}`)} 
                       className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"
                       title="Gerenciar Partida"
-                      aria-label={`Gerenciar partida ${q.title}`}
                     >
                       <ExternalLink size={18} />
                     </button>
@@ -341,7 +306,6 @@ export default function AdminDashboard() {
                       onClick={() => handleDeleteQuiz(q.id)} 
                       className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
                       title="Excluir Quiz"
-                      aria-label={`Excluir quiz ${q.title}`}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -350,8 +314,7 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-        ) : (
-          /* Aba de Gestão de Usuários */
+        ) : activeTab === "users" ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden shadow-2xl">
               <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
@@ -409,7 +372,8 @@ export default function AdminDashboard() {
                          <>
                            <button
                              onClick={() => handlePromoteAdmin(u.id, u.role)}
-                             title={u.role === 'admin' ? "Remover Admin" : "Tornar Admin"}
+                             title={u.role === 'admin' ? "Rebaixar para Jogador" : "Promover a Administrador"}
+                             aria-label={u.role === 'admin' ? "Rebaixar para Jogador" : "Promover a Administrador"}
                              className={`flex-1 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest flex items-center justify-center gap-2 transition-all border ${
                                u.role === 'admin' 
                                  ? 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500' 
@@ -421,6 +385,7 @@ export default function AdminDashboard() {
                            <button
                              onClick={() => handleDeleteUser(u.id, u.nickname)}
                              title="Excluir Usuário"
+                             aria-label="Excluir Usuário"
                              className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95"
                            >
                              <Trash2 size={16} />
@@ -430,6 +395,74 @@ export default function AdminDashboard() {
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6 pb-12">
+              <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="bg-amber-500/10 p-3 rounded-2xl text-amber-500">
+                      <Gamepad2 size={24} />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-black text-[var(--foreground)] italic uppercase tracking-tighter leading-none">Moeda do Quiz</h2>
+                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Visível para todos os jogadores</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Moedas de Ouro"].map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => updateGlobalSetting("currency", c)}
+                      className={`px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.1em] transition-all border ${
+                        globalSettings.currency === c 
+                          ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-[1.02]" 
+                          : "bg-[var(--background)] border-[var(--border)] text-slate-500 hover:border-[var(--primary)]/30"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="bg-emerald-500/10 p-3 rounded-2xl text-emerald-500">
+                      <ShieldCheck size={24} />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-black text-[var(--foreground)] italic uppercase tracking-tighter leading-none">Regras de Pontos</h2>
+                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Pontos ganhos por acerto</p>
+                   </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex flex-wrap gap-2">
+                    {[50, 100, 200, 500, 1000].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => updateGlobalSetting("points_per_question", v.toString())}
+                        className={`flex-1 min-w-[80px] py-4 rounded-2xl font-black text-sm transition-all border ${
+                          globalSettings.points_per_question === v
+                            ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-[1.02]"
+                            : "bg-[var(--background)] border(--border) text-slate-500 hover:border-[var(--primary)]/30"
+                        }`}
+                      >
+                        +{v}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+                    <p className="text-[10px] text-blue-400 font-medium leading-relaxed italic">
+                      💡 <b>Dica:</b> Alterar a pontuação no meio de uma partida afetará apenas as respostas enviadas a partir de agora. Os pontos já acumulados pelos jogadores não serão alterados.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>

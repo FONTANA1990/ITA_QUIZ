@@ -7,7 +7,7 @@ import { Trophy, Medal, ArrowUpRight, Loader2 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 export default function Leaderboard() {
-  const { preferences } = useUser();
+  const { globalSettings } = useUser();
   const [rankings, setRankings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +82,7 @@ export default function Leaderboard() {
                   {(user.total_points || 0).toLocaleString()}
                 </span>
                 <span className="text-[9px] text-[var(--secondary)] font-black uppercase tracking-widest flex items-center gap-0.5 justify-end">
-                  {preferences.currency} <ArrowUpRight size={10} strokeWidth={4} />
+                  {globalSettings.currency} <ArrowUpRight size={10} strokeWidth={4} />
                 </span>
               </div>
             </motion.div>

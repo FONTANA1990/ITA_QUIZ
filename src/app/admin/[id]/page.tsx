@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 
 export default function AdminRoom({ params }: { params: Promise<{ id: string }> }) {
   const { id: quizId } = use(params);
-  const { preferences } = useUser();
+  const { preferences, globalSettings } = useUser();
   const [quiz, setQuiz] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [participants, setParticipants] = useState<any[]>([]);
@@ -289,7 +289,7 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                          </div>
                          <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2">{s.users?.nickname}</h3>
                          <span className="text-[var(--primary)] font-black text-xl uppercase italic tracking-tighter">
-                            {s.total_points} {preferences.currency}
+                            {s.total_points} {globalSettings.currency}
                          </span>
                       </motion.div>
                     ))}

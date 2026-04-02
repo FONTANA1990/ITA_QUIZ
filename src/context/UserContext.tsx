@@ -8,7 +8,6 @@ type CurrencyMode = "Pontos" | "Dracmas" | "Talentos" | "Denários" | "Shekels" 
 interface UserPreferences {
   theme: "light" | "dark";
   avatar: string;
-  currency: CurrencyMode;
 }
 
 interface UserProfile {
@@ -21,9 +20,13 @@ interface UserProfile {
 
 interface UserContextType {
   preferences: UserPreferences;
+  globalSettings: {
+    currency: CurrencyMode;
+    points_per_question: number;
+  };
   setTheme: (theme: "light" | "dark") => void;
   setAvatar: (avatar: string) => void;
-  setCurrency: (currency: CurrencyMode) => void;
+  updateGlobalSetting: (key: string, value: string) => Promise<void>;
   user: UserProfile | null;
   loading: boolean;
   logout: () => Promise<void>;
@@ -39,7 +42,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: "dark",
     avatar: "🎮",
-    currency: "Dracmas",
+  });
+  const [globalSettings, setGlobalSettings] = useState({
+    currency: "Dracmas" as CurrencyMode,
+    points_per_question: 100,
   });
 
   const fetchProfile = async (sessionUser: any) => {
@@ -57,11 +63,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error || !data) {
-        // Fallback: se o trigger demorar, cria um objeto básico
         setUser({
           id: sessionUser.id,
           email: sessionUser.email,
-          nickname: sessionUser.email.split("@")[0],
+          nickname: sessionUser.email?.split("@")[0] || "Jogador",
           role: "player",
           total_points: 0
         });
@@ -75,6 +80,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchGlobalSettings = async () => {
+    const { data } = await supabase.from("settings").select("*");
+    if (data) {
+      const settingsObj: any = {};
+      data.forEach(s => {
+        settingsObj[s.key] = s.value;
+      });
+      setGlobalSettings({
+        currency: (settingsObj.currency as CurrencyMode) || "Dracmas",
+        points_per_question: parseInt(settingsObj.points_per_question) || 100
+      });
+    }
+  };
+
   useEffect(() => {
     const savedPrefs = localStorage.getItem("ita_quiz_prefs");
     if (savedPrefs) {
@@ -83,13 +102,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.setAttribute("data-theme", parsedPrefs.theme);
     }
 
+    fetchGlobalSettings();
+
     // Inicializar sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
       fetchProfile(session?.user ?? null);
     });
 
     // Escutar mudanças de Auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         fetchProfile(session?.user ?? null);
       } else if (event === "SIGNED_OUT") {
@@ -98,8 +119,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Escutar mudanças globais (Realtime)
+    const settingsSub = supabase
+      .channel("global_settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "settings" }, (payload) => {
+        fetchGlobalSettings();
+      })
+      .subscribe();
+
     setMounted(true);
-    return () => subscription.unsubscribe();
+    return () => {
+      authSub.unsubscribe();
+      supabase.removeChannel(settingsSub);
+    };
   }, []);
 
   const setTheme = (theme: "light" | "dark") => {
@@ -115,10 +147,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("ita_quiz_prefs", JSON.stringify(newPrefs));
   };
 
-  const setCurrency = (currency: CurrencyMode) => {
-    const newPrefs = { ...preferences, currency };
-    setPreferences(newPrefs);
-    localStorage.setItem("ita_quiz_prefs", JSON.stringify(newPrefs));
+
+  const updateGlobalSetting = async (key: string, value: string) => {
+    const { error } = await supabase
+      .from("settings")
+      .upsert({ key, value, updated_at: new Error().stack }) // Hack para forçar updated_at se necessário, mas upsert resolve
+      .select();
+    
+    if (error) {
+      console.error("Erro ao atualizar config global:", error);
+      throw error;
+    }
+    await fetchGlobalSettings();
   };
 
   const logout = async () => {
@@ -135,7 +175,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider value={{ 
-      preferences, setTheme, setAvatar, setCurrency, 
+      preferences, 
+      globalSettings,
+      setTheme, setAvatar, updateGlobalSetting,
       user, loading, logout, refreshProfile 
     }}>
       {children}

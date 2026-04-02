@@ -7,7 +7,7 @@ import { History, CheckCircle2, XCircle, TrendingUp, Calendar, Loader2 } from "l
 import { useUser } from "@/context/UserContext";
 
 export default function GameHistory() {
-  const { preferences, user } = useUser();
+  const { preferences, globalSettings, user } = useUser();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, wins: 0, rate: 0 });
@@ -119,7 +119,7 @@ export default function GameHistory() {
                   {item.isWinner ? "Finalizado" : "Incompleto"}
                 </span>
                 <span className="text-[11px] text-[var(--primary)] font-black tracking-widest leading-none mt-2 inline-block bg-[var(--primary)]/10 px-3 py-1.5 rounded-full border border-[var(--primary)]/10">
-                  {item.points} {preferences.currency}
+                  {item.points} {globalSettings.currency}
                 </span>
               </div>
             </motion.div>

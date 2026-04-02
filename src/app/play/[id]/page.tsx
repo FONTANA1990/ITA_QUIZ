@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 
 export default function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: quizId } = use(params);
-  const { preferences, user: contextUser } = useUser();
+  const { preferences, globalSettings, user: contextUser } = useUser();
   const [quiz, setQuiz] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [answered, setAnswered] = useState(false);
@@ -221,7 +221,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                   <h2 className={`text-4xl font-black italic uppercase tracking-tighter ${lastAnswerCorrect ? 'text-emerald-500' : 'text-red-500'}`}>
                     {lastAnswerCorrect ? "CERTA RESPOSTA!" : "ERROU!"}
                   </h2>
-                  <p className="mt-4 text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">{lastAnswerCorrect ? "Você ganhou +100 " + (preferences.currency === 'Pontos' ? 'Pontos' : preferences.currency + " Bíblicas") : "Não desanime, a próxima vem aí!"}</p>
+                  <p className="mt-4 text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">{lastAnswerCorrect ? `Você ganhou +${globalSettings.points_per_question} ${globalSettings.currency === 'Pontos' ? 'Pontos' : globalSettings.currency + " Bíblicas"}` : "Não desanime, a próxima vem aí!"}</p>
                 </div>
               )}
             </motion.div>

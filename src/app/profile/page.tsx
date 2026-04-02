@@ -15,10 +15,9 @@ const avatars = [
   "🎮", "🛡️", "🔥", "💎", "🌟", "🦁", "🕊️", "⚓", "👑", "📜",
   "🦦", "🐕", "🐼", "🦜", "⚽", "🐒", "🥥", "🐆", "🏖️", "🩴"
 ];
-const currencies = ["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Moedas de Ouro"];
 
 export default function Profile() {
-  const { preferences, setTheme, setAvatar, setCurrency, user, logout } = useUser();
+  const { preferences, setTheme, setAvatar, user, logout } = useUser();
   const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth">("menu");
   const router = useRouter();
   
@@ -193,26 +192,6 @@ export default function Profile() {
                 </div>
               </section>
 
-              <section className="bg-[var(--surface)] p-6 rounded-[2rem] border border-[var(--border)] shadow-xl">
-                <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-4 block italic text-glow-blue flex items-center gap-2">
-                  <Coins size={12} /> Moeda Bíblica Preferida
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {currencies.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCurrency(c as any)}
-                      className={`px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all border ${
-                        preferences.currency === c 
-                          ? "bg-[var(--primary)] border-[var(--primary)] text-white" 
-                          : "bg-[var(--background)] border-[var(--border)] text-slate-500"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </section>
             </div>
           </motion.div>
         )}
