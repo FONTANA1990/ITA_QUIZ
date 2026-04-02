@@ -151,7 +151,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const updateGlobalSetting = async (key: string, value: string) => {
     const { error } = await supabase
       .from("settings")
-      .upsert({ key, value, updated_at: new Error().stack }) // Hack para forçar updated_at se necessário, mas upsert resolve
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
       .select();
     
     if (error) {

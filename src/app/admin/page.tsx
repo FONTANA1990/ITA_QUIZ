@@ -199,6 +199,17 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateSetting = async (key: string, value: string) => {
+    setStatus(null);
+    try {
+      await updateGlobalSetting(key, value);
+      setStatus({ type: "success", msg: "Configuração atualizada com sucesso!" });
+    } catch (err: any) {
+      console.error("Erro ao salvar config:", err);
+      setStatus({ type: "error", msg: `Falha ao salvar: ${err.message || 'Verifique sua conexão'}` });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -416,7 +427,7 @@ export default function AdminDashboard() {
                   {["Pontos", "Dracmas", "Talentos", "Denários", "Shekels", "Moedas de Ouro"].map((c) => (
                     <button
                       key={c}
-                      onClick={() => updateGlobalSetting("currency", c)}
+                      onClick={() => handleUpdateSetting("currency", c)}
                       className={`px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.1em] transition-all border ${
                         globalSettings.currency === c 
                           ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-[1.02]" 
@@ -445,11 +456,11 @@ export default function AdminDashboard() {
                     {[50, 100, 200, 500, 1000].map((v) => (
                       <button
                         key={v}
-                        onClick={() => updateGlobalSetting("points_per_question", v.toString())}
+                        onClick={() => handleUpdateSetting("points_per_question", v.toString())}
                         className={`flex-1 min-w-[80px] py-4 rounded-2xl font-black text-sm transition-all border ${
                           globalSettings.points_per_question === v
                             ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-[1.02]"
-                            : "bg-[var(--background)] border(--border) text-slate-500 hover:border-[var(--primary)]/30"
+                            : "bg-[var(--background)] border-[var(--border)] text-slate-500 hover:border-[var(--primary)]/30"
                         }`}
                       >
                         +{v}
