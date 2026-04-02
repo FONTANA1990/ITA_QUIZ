@@ -17,6 +17,7 @@ export function parseCSV(file: File): Promise<ParsedQuestion[]> {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      transformHeader: (header) => header.trim().toLowerCase(),
       complete: (results) => {
         try {
           const parsed = results.data
