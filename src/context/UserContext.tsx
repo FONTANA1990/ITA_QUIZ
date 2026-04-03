@@ -110,27 +110,40 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchUserOrganizations = async (userId: string) => {
-    const { data: members, error } = await supabase
-      .from("organization_members")
-      .select("role, organizations(*)")
-      .eq("user_id", userId);
+    try {
+      const { data: members, error } = await supabase
+        .from("organization_members")
+        .select("role, organizations(*)")
+        .eq("user_id", userId);
 
-    if (members) {
-      const orgs = members.map((m: any) => ({
-        ...m.organizations,
-        role: m.role
-      })) as Organization[];
-      
-      setOrganizations(orgs);
-
-      // Tenta recuperar a última base ativa do localStorage
-      const savedOrgId = localStorage.getItem("ita_quiz_active_org");
-      const found = orgs.find(o => o.id === savedOrgId) || orgs[0];
-      
-      if (found) {
-        setActiveOrg(found);
-        localStorage.setItem("ita_quiz_active_org", found.id);
+      if (error) {
+        console.error("Erro ao buscar organizações:", error);
+        return;
       }
+
+      if (members) {
+        const orgs = members
+          .filter((m: any) => m.organizations) // Garante que a org foi retornada (RLS permitiu)
+          .map((m: any) => ({
+            ...m.organizations,
+            role: m.role
+          })) as Organization[];
+        
+        setOrganizations(orgs);
+
+        // Tenta recuperar a última base ativa do localStorage
+        const savedOrgId = localStorage.getItem("ita_quiz_active_org");
+        const found = orgs.find(o => o.id === savedOrgId) || orgs[0];
+        
+        if (found) {
+          setActiveOrg(found);
+          localStorage.setItem("ita_quiz_active_org", found.id);
+        } else {
+          setActiveOrg(null);
+        }
+      }
+    } catch (err) {
+      console.error("Erro fatal ao carregar organizações:", err);
     }
   };
 
@@ -226,14 +239,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createOrganization = async (name: string) => {
-    if (!user) return;
-    const { data: orgId, error } = await supabase.rpc("create_organization", {
-      p_name: name,
-      p_owner_id: user.id
-    });
+    if (!user) {
+      console.error("Usuário não autenticado para criar organização");
+      return;
+    }
+    
+    try {
+      const { data: orgId, error } = await supabase.rpc("create_organization", {
+        p_name: name,
+        p_owner_id: user.id
+      });
 
-    if (error) throw error;
-    await fetchUserOrganizations(user.id);
+      if (error) {
+        console.error("Erro ao criar organização via RPC:", error);
+        throw error;
+      }
+
+      console.log("Organização criada com ID:", orgId);
+      
+      // Força a atualização da lista e seleciona a nova org
+      await fetchUserOrganizations(user.id);
+      
+      // Se a lista foi atualizada, o fetchUserOrganizations já deve ter setado uma activeOrg
+      // mas vamos garantir que a nova org seja a ativa se possível
+      if (orgId) {
+        localStorage.setItem("ita_quiz_active_org", orgId);
+      }
+    } catch (err: any) {
+      console.error("Falha ao criar organização:", err);
+      throw err;
+    }
   };
 
   const switchOrganization = (orgId: string) => {
