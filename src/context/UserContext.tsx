@@ -18,6 +18,22 @@ interface UserProfile {
   total_points?: number;
 }
 
+export interface Organization {
+  id: string;
+  name: string;
+  owner_id: string;
+  role?: "admin" | "member";
+}
+
+export interface Invite {
+  id: string;
+  organization_id: string;
+  invited_email: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  role: 'admin' | 'member';
+  organizations?: { name: string };
+}
+
 interface UserContextType {
   preferences: UserPreferences;
   globalSettings: {
@@ -28,7 +44,15 @@ interface UserContextType {
   setAvatar: (avatar: string) => void;
   updateGlobalSetting: (key: string, value: string) => Promise<void>;
   user: UserProfile | null;
+  organizations: Organization[];
+  activeOrg: Organization | null;
+  pendingInvites: Invite[];
   loading: boolean;
+  createOrganization: (name: string) => Promise<void>;
+  switchOrganization: (orgId: string) => void;
+  acceptInvite: (inviteId: string) => Promise<void>;
+  declineInvite: (inviteId: string) => Promise<void>;
+  sendInvite: (email: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -38,6 +62,9 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [activeOrg, setActiveOrg] = useState<Organization | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: "dark",
@@ -51,6 +78,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = async (sessionUser: any) => {
     if (!sessionUser) {
       setUser(null);
+      setOrganizations([]);
+      setActiveOrg(null);
       setLoading(false);
       return;
     }
@@ -62,17 +91,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         .eq("id", sessionUser.id)
         .maybeSingle();
 
-      if (error || !data) {
-        setUser({
-          id: sessionUser.id,
-          email: sessionUser.email,
-          nickname: sessionUser.email?.split("@")[0] || "Jogador",
-          role: "player",
-          total_points: 0
-        });
-      } else {
-        setUser(data);
-      }
+      const profile = error || !data ? {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        nickname: sessionUser.email?.split("@")[0] || "Jogador",
+        role: "player",
+        total_points: 0
+      } : data;
+
+      setUser(profile);
+      await fetchUserOrganizations(sessionUser.id);
+      await fetchPendingInvites(sessionUser.email);
     } catch (err) {
       console.error("Erro ao carregar perfil:", err);
     } finally {
@@ -80,9 +109,47 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchGlobalSettings = async () => {
-    const { data } = await supabase.from("settings").select("*");
-    if (data) {
+  const fetchUserOrganizations = async (userId: string) => {
+    const { data: members, error } = await supabase
+      .from("organization_members")
+      .select("role, organizations(*)")
+      .eq("user_id", userId);
+
+    if (members) {
+      const orgs = members.map((m: any) => ({
+        ...m.organizations,
+        role: m.role
+      })) as Organization[];
+      
+      setOrganizations(orgs);
+
+      // Tenta recuperar a última base ativa do localStorage
+      const savedOrgId = localStorage.getItem("ita_quiz_active_org");
+      const found = orgs.find(o => o.id === savedOrgId) || orgs[0];
+      
+      if (found) {
+        setActiveOrg(found);
+        localStorage.setItem("ita_quiz_active_org", found.id);
+      }
+    }
+  };
+
+  const fetchPendingInvites = async (email: string) => {
+    const { data } = await supabase
+      .from("invites")
+      .select("*, organizations(name)")
+      .eq("invited_email", email)
+      .eq("status", "pending");
+    setPendingInvites(data || []);
+  };
+
+  const fetchSettings = async (orgId: string) => {
+    const { data } = await supabase
+      .from("settings")
+      .select("*")
+      .eq("organization_id", orgId);
+
+    if (data && data.length > 0) {
       const settingsObj: any = {};
       data.forEach(s => {
         settingsObj[s.key] = s.value;
@@ -91,8 +158,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         currency: (settingsObj.currency as CurrencyMode) || "Dracmas",
         points_per_question: parseInt(settingsObj.points_per_question) || 100
       });
+    } else {
+      // Valores padrão se não houver configurações
+      setGlobalSettings({
+        currency: "Dracmas",
+        points_per_question: 100
+      });
     }
   };
+
+  useEffect(() => {
+    if (activeOrg) {
+      fetchSettings(activeOrg.id);
+    }
+  }, [activeOrg?.id]);
 
   useEffect(() => {
     const savedPrefs = localStorage.getItem("ita_quiz_prefs");
@@ -101,8 +180,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setPreferences(parsedPrefs);
       document.documentElement.setAttribute("data-theme", parsedPrefs.theme);
     }
-
-    fetchGlobalSettings();
 
     // Inicializar sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -115,15 +192,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         fetchProfile(session?.user ?? null);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
+        setOrganizations([]);
+        setActiveOrg(null);
         setLoading(false);
       }
     });
 
-    // Escutar mudanças globais (Realtime)
     const settingsSub = supabase
-      .channel("global_settings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "settings" }, (payload) => {
-        fetchGlobalSettings();
+      .channel("org_settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "settings" }, () => {
+        if (activeOrg) fetchSettings(activeOrg.id);
       })
       .subscribe();
 
@@ -147,23 +225,102 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("ita_quiz_prefs", JSON.stringify(newPrefs));
   };
 
+  const createOrganization = async (name: string) => {
+    if (!user) return;
+    const { data: orgId, error } = await supabase.rpc("create_organization", {
+      p_name: name,
+      p_owner_id: user.id
+    });
+
+    if (error) throw error;
+    await fetchUserOrganizations(user.id);
+  };
+
+  const switchOrganization = (orgId: string) => {
+    const found = organizations.find(o => o.id === orgId);
+    if (found) {
+      setActiveOrg(found);
+      localStorage.setItem("ita_quiz_active_org", found.id);
+    }
+  };
+
+  const acceptInvite = async (inviteId: string) => {
+    if (!user) return;
+    try {
+      // 1. Atualiza convite para aceito
+      const { data: invite, error: invError } = await supabase
+        .from("invites")
+        .update({ status: 'accepted' })
+        .eq("id", inviteId)
+        .select()
+        .single();
+
+      if (invError) throw invError;
+
+      // 2. Adiciona como membro
+      const { error: memError } = await supabase
+        .from("organization_members")
+        .insert({
+          organization_id: invite.organization_id,
+          user_id: user.id,
+          role: invite.role
+        });
+
+      if (memError) throw memError;
+
+      await fetchUserOrganizations(user.id);
+      await fetchPendingInvites(user.email);
+    } catch (err) {
+      console.error("Erro ao aceitar convite:", err);
+      throw err;
+    }
+  };
+
+  const sendInvite = async (email: string, role: string) => {
+    if (!activeOrg) return;
+    const { error } = await supabase
+      .from("invites")
+      .insert({
+        organization_id: activeOrg.id,
+        invited_email: email,
+        role: role
+      });
+    if (error) throw error;
+  };
+
+  const declineInvite = async (inviteId: string) => {
+    const { error } = await supabase
+      .from("invites")
+      .update({ status: 'rejected' })
+      .eq("id", inviteId);
+    if (error) throw error;
+    if (user?.email) await fetchPendingInvites(user.email);
+  };
 
   const updateGlobalSetting = async (key: string, value: string) => {
+    if (!activeOrg) return;
     const { error } = await supabase
       .from("settings")
-      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+      .upsert({ 
+        organization_id: activeOrg.id,
+        key, 
+        value, 
+        updated_at: new Date().toISOString() 
+      }, { onConflict: 'organization_id,key' })
       .select();
     
     if (error) {
-      console.error("Erro ao atualizar config global:", error);
+      console.error("Erro ao atualizar config da base:", error);
       throw error;
     }
-    await fetchGlobalSettings();
+    await fetchSettings(activeOrg.id);
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setOrganizations([]);
+    setActiveOrg(null);
   };
 
   const refreshProfile = async () => {
@@ -178,7 +335,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       preferences, 
       globalSettings,
       setTheme, setAvatar, updateGlobalSetting,
-      user, loading, logout, refreshProfile 
+      user, organizations, activeOrg, pendingInvites,
+      loading, createOrganization, switchOrganization,
+      acceptInvite, declineInvite, sendInvite,
+      logout, refreshProfile 
     }}>
       {children}
     </UserContext.Provider>

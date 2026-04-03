@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Settings, Shield, Bell, HelpCircle, LogOut, 
   ChevronRight, ArrowLeft, Moon, Sun, Check, Coins, 
-  Lock, Key, Loader2
+  Lock, Key, Loader2, Building2
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabase";
@@ -17,8 +17,8 @@ const avatars = [
 ];
 
 export default function Profile() {
-  const { preferences, setTheme, setAvatar, user, logout } = useUser();
-  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth">("menu");
+  const { preferences, setTheme, setAvatar, user, logout, pendingInvites, acceptInvite, declineInvite } = useUser();
+  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth" | "invites">("menu");
   const router = useRouter();
   
   // States do Login
@@ -123,15 +123,17 @@ export default function Profile() {
               <MenuButton 
                 label="Privacidade e Segurança" 
                 icon={Shield} 
-                color="text-[#22C55E]" 
-                onClick={() => setActiveTab("privacy")} 
-              />
-              <MenuButton 
-                label="Ajuda e Suporte" 
-                icon={HelpCircle} 
                 color="text-[#22D3EE]" 
                 onClick={() => setActiveTab("help")} 
               />
+              {pendingInvites.length > 0 && (
+                <MenuButton 
+                  label={`Convites Pendentes (${pendingInvites.length})`} 
+                  icon={Bell} 
+                  color="text-amber-500 animate-pulse" 
+                  onClick={() => setActiveTab("invites")} 
+                />
+              )}
               {!user && (
                 <MenuButton 
                   label="Entrar ou Cadastrar" 
@@ -326,10 +328,66 @@ export default function Profile() {
                     </button>
                   </div>
                </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "invites" && (
+            <motion.div
+              key="invites"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex flex-col flex-1"
+            >
+              {renderHeader("Convites Recebidos")}
+              <div className="space-y-4">
+                {pendingInvites.length === 0 ? (
+                  <div className="text-center py-12">
+                     <Bell className="mx-auto text-slate-700 mb-4 opacity-20" size={48} />
+                     <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Nenhum convite pendente</p>
+                  </div>
+                ) : (
+                  pendingInvites.map((inv) => (
+                    <div key={inv.id} className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] shadow-xl space-y-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
+                          <Building2 size={24} />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-[var(--foreground)] italic uppercase tracking-tighter text-lg leading-none">
+                            {inv.organizations?.name || "Organização"}
+                          </h3>
+                          <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">
+                            Convidado como <span className="text-amber-500">{inv.role === 'admin' ? 'Administrador' : 'Membro'}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                         <button 
+                           onClick={() => declineInvite(inv.id)}
+                           className="py-4 rounded-2xl bg-red-500/10 text-red-500 font-black uppercase text-[10px] tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                         >
+                           Recusar
+                         </button>
+                         <button 
+                           onClick={async () => {
+                             await acceptInvite(inv.id);
+                             setActiveTab("menu");
+                           }}
+                           className="py-4 rounded-2xl bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                         >
+                           Aceitar
+                         </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
     </div>
   );
 }
