@@ -515,7 +515,7 @@ export default function AdminDashboard() {
                             <div className="flex gap-4">
                               <span className="text-2xl font-black text-slate-500/20 tabular-nums italic">{(i + 1).toString().padStart(2, '0')}</span>
                               <div className="flex-1 space-y-4">
-                                <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed">
+                                <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed break-words">
                                   {q.question_text || "Texto da pergunta não encontrado"}
                                 </p>
                                 

@@ -223,17 +223,17 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                 exit={{ opacity: 0, x: -50 }}
                 className="space-y-8"
               >
-                <div className="bg-[var(--surface)] p-12 rounded-[3.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden">
+                <div className="bg-[var(--surface)] p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-24 bg-[var(--primary)]/5 blur-3xl rounded-full -mr-20 -mt-20" />
                   <div className="flex justify-between items-center mb-6 relative z-10">
-                    <span className="text-[var(--primary)] font-black uppercase tracking-[0.3em] text-xs py-1.5 px-4 bg-[var(--primary)]/10 rounded-full border border-[var(--primary)]/20">Pergunta {currentQuestionIdx + 1} de {questions.length}</span>
+                    <span className="text-[var(--primary)] font-black uppercase tracking-[0.3em] text-[10px] md:text-xs py-1.5 px-4 bg-[var(--primary)]/10 rounded-full border border-[var(--primary)]/20">Pergunta {currentQuestionIdx + 1} de {questions.length}</span>
                     {timeLeft !== null && (
-                       <div className={`flex items-center gap-2 px-6 py-2 rounded-full border font-black text-sm shadow-lg ${timeLeft <= 5 ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-[var(--background)] border-[var(--border)] text-[var(--foreground)]'}`}>
-                         <Clock size={18} /> {timeLeft}s restantes
+                       <div className={`flex items-center gap-2 px-4 md:px-6 py-2 rounded-full border font-black text-xs md:text-sm shadow-lg ${timeLeft <= 5 ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-[var(--background)] border-[var(--border)] text-[var(--foreground)]'}`}>
+                         <Clock size={16} /> {timeLeft}s {window.innerWidth < 768 ? '' : 'restantes'}
                        </div>
                     )}
                   </div>
-                  <h2 className="text-5xl font-black leading-tight italic uppercase tracking-tight relative z-10">{currentQuestion.question_text}</h2>
+                  <h2 className="text-2xl md:text-5xl font-black leading-tight italic uppercase tracking-tight relative z-10 break-words line-clamp-6">{currentQuestion.question_text}</h2>
                 </div>
 
                 <div className={`grid gap-4 ${Object.keys(currentQuestion.options).length > 4 ? 'grid-cols-1 md:grid-cols-3' : 'md:grid-cols-2'}`}>
