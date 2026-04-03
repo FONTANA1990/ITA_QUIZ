@@ -802,7 +802,7 @@ export default function AdminDashboard() {
                         key={v}
                         onClick={() => handleUpdateSetting("points_per_question", v.toString())}
                         className={`px-6 py-3 rounded-2xl font-black text-sm uppercase italic transition-all border ${
-                          globalSettings.points_per_question === v.toString()
+                          globalSettings.points_per_question === v
                             ? "bg-emerald-500 border-emerald-500 text-white shadow-xl scale-105"
                             : "bg-[var(--background)] border-[var(--border)] text-slate-500 hover:border-emerald-500/30"
                         }`}
