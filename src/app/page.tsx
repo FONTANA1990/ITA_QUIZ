@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Gamepad2, Loader2, Play, LayoutDashboard } from "lucide-react";
@@ -16,9 +16,9 @@ export default function Home() {
   const [activeEvents, setActiveEvents] = useState<any[]>([]);
   const router = useRouter();
   
-  useState(() => {
+  useEffect(() => {
     fetchActiveEvents();
-  });
+  }, []);
 
   const fetchActiveEvents = async () => {
     const { data } = await supabase
@@ -32,9 +32,9 @@ export default function Home() {
   };
 
   // Se o usuário já estiver logado, preenche o nickname
-  useState(() => {
+  useEffect(() => {
     if (contextUser?.nickname) setNickname(contextUser.nickname);
-  });
+  }, [contextUser?.nickname]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +109,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex 1 items-center justify-center min-h-screen relative p-4 bg-[var(--background)] transition-colors duration-300">
+    <div className="flex items-center justify-center min-h-screen relative p-4 bg-[var(--background)] transition-colors duration-300">
       
       {/* Background Decorativo */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[var(--primary)]/10 via-[var(--background)] to-[var(--background)] z-0" />
