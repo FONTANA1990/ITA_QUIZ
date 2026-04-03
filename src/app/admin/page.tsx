@@ -330,352 +330,344 @@ export default function AdminDashboard() {
 
         {activeTab === "quizzes" ? (
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 space-y-6">
-              <div className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="bg-[var(--primary)]/10 p-2 rounded-xl text-[var(--primary)]">
-                      <Plus size={20} />
-                   </div>
-                   <h2 className="text-lg font-black text-[var(--foreground)] italic uppercase tracking-tighter">Novo Quiz</h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Título do Quiz</label>
-                    <input
-                      id="quiz-title-input"
-                      type="text"
-                      placeholder="Ex: Histórias Bíblicas"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Modo de Jogo</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => setQuizType("classic")}
-                        className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
-                          quizType === 'classic' 
-                            ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
-                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
-                        }`}
-                      >
-                        Modo Kahoot
-                      </button>
-                      <button
-                        onClick={() => setQuizType("event")}
-                        className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
-                          quizType === 'event' 
-                            ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
-                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
-                        }`}
-                      >
-                        Modo Evento
-                      </button>
-                    </div>
-                    <p className="text-[8px] text-slate-500 italic mt-1 px-1">
-                      {quizType === 'classic' 
-                        ? "• O ADM controla o telão e as perguntas não aparecem no celular." 
-                        : "• Os alunos respondem no seu próprio tempo e veem a pergunta no celular."}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Tempo por Pergunta</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[15, 30, 60, 90, 120].map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTimer(t)}
-                          className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
-                            timer === t 
-                              ? 'bg-[var(--primary)] border-[var(--primary)] text-white' 
-                              : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
-                          }`}
-                        >
-                          {t}s
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setTimer(null)}
-                        className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
-                          timer === null 
-                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
-                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
-                        }`}
-                      >
-                        Livre
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <button onClick={downloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest flex items-center gap-1">
-                      <Download size={12} /> Baixar Modelo CSV
-                    </button>
-                  </div>
-
-                  <div className="pt-2">
-                    <div className="flex p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] mb-4">
-                      <button 
-                        onClick={() => { setUploadMode("file"); setIsPreviewing(false); }}
-                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'file' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
-                      >
-                        Arquivo
-                      </button>
-                      <button 
-                        onClick={() => { setUploadMode("text"); setIsPreviewing(false); }}
-                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'text' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
-                      >
-                        Colar CSV
-                      </button>
-                      <button 
-                        onClick={() => { setUploadMode("manual"); }}
-                        className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'manual' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
-                      >
-                        Passo a Passo
-                      </button>
+            {!isPreviewing ? (
+              <>
+                <div className="md:col-span-1 space-y-6">
+                  <div className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
+                    <div className="flex items-center gap-3 mb-6">
+                       <div className="bg-[var(--primary)]/10 p-2 rounded-xl text-[var(--primary)]">
+                          <Plus size={20} />
+                       </div>
+                       <h2 className="text-lg font-black text-[var(--foreground)] italic uppercase tracking-tighter">Novo Quiz</h2>
                     </div>
 
-                    {uploadMode === "file" ? (
+                    <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <label htmlFor="csv-upload" className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Arquivo CSV</label>
-                        <div className="relative group">
-                          <input id="csv-upload" type="file" accept=".csv" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                          <div className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${file ? "bg-[var(--primary)]/5 border-[var(--primary)]/30" : "bg-[var(--background)] border-[var(--border)] text-slate-500"}`}>
-                            {file ? <CheckCircle2 className="text-[var(--primary)]" /> : <Upload size={20} />}
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-center truncate w-full px-2">{file ? file.name : "Selecionar Arquivo"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ) : uploadMode === "text" ? (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Cole o CSV aqui</label>
-                        <textarea
-                          placeholder="pergunta,opcao_a,opcao_b...&#10;Pergunta 1,A,B,C,D,E,A"
-                          value={csvRawText}
-                          onChange={(e) => setCsvRawText(e.target.value)}
-                          className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-mono text-[10px] h-32 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Título do Quiz</label>
+                        <input
+                          id="quiz-title-input"
+                          type="text"
+                          placeholder="Ex: Histórias Bíblicas"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
                         />
                       </div>
-                    ) : (
-                      <div className="space-y-4 pt-2">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Sua Pergunta</label>
-                          <textarea
-                            placeholder="Digite a pergunta aqui..."
-                            value={manualQuestion.question_text}
-                            onChange={(e) => setManualQuestion({ ...manualQuestion, question_text: e.target.value })}
-                            className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-xs h-24 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
-                          />
+
+                      <div className="space-y-1.5 pt-2">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Modo de Jogo</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setQuizType("classic")}
+                            className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                              quizType === 'classic' 
+                                ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
+                                : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
+                            }`}
+                          >
+                            Modo Kahoot
+                          </button>
+                          <button
+                            onClick={() => setQuizType("event")}
+                            className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                              quizType === 'event' 
+                                ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
+                                : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
+                            }`}
+                          >
+                            Modo Evento
+                          </button>
                         </div>
-                        
-                        <div className="space-y-2 pt-2">
-                          <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
-                            Opções de Resposta 
-                            <span className="text-[8px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full border border-blue-500/20 italic">
-                              Dica: Clique na letra (A-E) para marcar a correta
-                            </span>
-                          </label>
-                          <div className="grid grid-cols-1 gap-2">
-                          {['A', 'B', 'C', 'D', 'E'].map(l => (
-                            <div key={l} className="flex gap-2 items-center">
-                              <button 
-                                onClick={() => setManualQuestion({ ...manualQuestion, correct_option: l })}
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition-all border-2 ${
-                                  manualQuestion.correct_option === l 
-                                    ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
-                                    : 'bg-[var(--background)] text-slate-500 border-[var(--border)] opacity-40 hover:opacity-100'
-                                }`}
-                              >
-                                {l}
-                              </button>
-                              <input 
-                                type="text"
-                                placeholder={`Opção ${l}${l === 'E' ? ' (Opcional)' : ''}`}
-                                value={manualQuestion.options[l as 'A'|'B'|'C'|'D'|'E']}
-                                onChange={(e) => setManualQuestion({
-                                  ...manualQuestion,
-                                  options: { ...manualQuestion.options, [l]: e.target.value }
-                                })}
-                                className={`flex-1 bg-[var(--background)] border px-4 py-2 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all ${
-                                  manualQuestion.correct_option === l ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)]'
-                                }`}
+                        <p className="text-[8px] text-slate-500 italic mt-1 px-1">
+                          {quizType === 'classic' 
+                            ? "• O ADM controla o telão e as perguntas não aparecem no celular." 
+                            : "• Os alunos respondem no seu próprio tempo e veem a pergunta no celular."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2">
+                        <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Tempo por Pergunta</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[15, 30, 60, 90, 120].map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => setTimer(t)}
+                              className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                                timer === t 
+                                  ? 'bg-[var(--primary)] border-[var(--primary)] text-white' 
+                                  : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
+                              }`}
+                            >
+                              {t}s
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setTimer(null)}
+                            className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                              timer === null 
+                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                                : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
+                            }`}
+                          >
+                            Livre
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2">
+                        <button onClick={downloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest flex items-center gap-1">
+                          <Download size={12} /> Baixar Modelo CSV
+                        </button>
+                      </div>
+
+                      <div className="pt-2">
+                        <div className="flex p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] mb-4">
+                          <button 
+                            onClick={() => { setUploadMode("file"); setIsPreviewing(false); }}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'file' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                          >
+                            Arquivo
+                          </button>
+                          <button 
+                            onClick={() => { setUploadMode("text"); setIsPreviewing(false); }}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'text' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                          >
+                            Colar CSV
+                          </button>
+                          <button 
+                            onClick={() => { setUploadMode("manual"); }}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all ${uploadMode === 'manual' ? 'bg-[var(--surface)] text-[var(--primary)] shadow-sm' : 'text-slate-500 hover:text-slate-400'}`}
+                          >
+                            Passo a Passo
+                          </button>
+                        </div>
+
+                        {uploadMode === "file" ? (
+                          <div className="space-y-1.5">
+                            <label htmlFor="csv-upload" className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Arquivo CSV</label>
+                            <div className="relative group">
+                              <input id="csv-upload" type="file" accept=".csv" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                              <div className={`p-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all ${file ? "bg-[var(--primary)]/5 border-[var(--primary)]/30" : "bg-[var(--background)] border-[var(--border)] text-slate-500"}`}>
+                                {file ? <CheckCircle2 className="text-[var(--primary)]" /> : <Upload size={20} />}
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-center truncate w-full px-2">{file ? file.name : "Selecionar Arquivo"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : uploadMode === "text" ? (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Cole o CSV aqui</label>
+                            <textarea
+                              placeholder="pergunta,opcao_a,opcao_b...&#10;Pergunta 1,A,B,C,D,E,A"
+                              value={csvRawText}
+                              onChange={(e) => setCsvRawText(e.target.value)}
+                              className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-mono text-[10px] h-32 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-4 pt-2">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Sua Pergunta</label>
+                              <textarea
+                                placeholder="Digite a pergunta aqui..."
+                                value={manualQuestion.question_text}
+                                onChange={(e) => setManualQuestion({ ...manualQuestion, question_text: e.target.value })}
+                                className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-xs h-24 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all resize-none"
                               />
                             </div>
-                          ))}
-                        </div>
-                      </div>
-
-                        {status && status.msg.includes("opção") && (
-                          <p className="text-[10px] font-bold text-red-500 animate-pulse text-center">{status.msg}</p>
-                        )}
-
-                        <button
-                          onClick={handleManualAdd}
-                          className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/30 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
-                        >
-                          <Plus size={14} /> ADICIONAR À LISTA
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {uploadMode !== 'manual' && !isPreviewing ? (
-                    <button
-                      onClick={handlePreview}
-                      disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
-                      className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-2"
-                    >
-                      {loading ? <Loader2 className="animate-spin" /> : (
-                        <>
-                          <FileText size={16} /> VISUALIZAR PERGUNTAS
-                        </>
-                      )}
-                    </button>
-                  ) : null}
-                  
-                  {isPreviewing && (
-                    <button
-                      onClick={handleResetPreview}
-                      className="w-full bg-slate-500/10 text-slate-500 p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] border border-slate-500/20 transition-all active:scale-95 flex justify-center items-center gap-2"
-                    >
-                      <RotateCcw size={16} />{uploadMode === 'manual' ? 'ESVAZIAR LISTA' : 'LIMPAR E CORRIGIR'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Preview Cards Section - Better for Mobile */}
-              <AnimatePresence>
-                {isPreviewing && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="md:col-span-3 space-y-6"
-                  >
-                    <div className="bg-[var(--surface)] p-6 md:p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                        <div>
-                          <h2 className="text-2xl font-black text-[var(--foreground)] italic uppercase tracking-tighter leading-none mb-2">Conferência de Dados</h2>
-                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">Confira se todas as perguntas foram lidas corretamente antes de finalizar</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <div className="bg-[var(--primary)]/10 px-4 py-2 rounded-2xl border border-[var(--primary)]/20 text-[var(--primary)] font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                            <FileText size={14} /> {previewQuestions.length} QUESTÕES
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        {previewQuestions.map((q, i) => (
-                          <div key={i} className="bg-[var(--background)]/40 p-5 md:p-6 rounded-3xl border border-[var(--border)]/50 hover:border-[var(--primary)] transition-all group">
-                            <div className="flex gap-4">
-                              <span className="text-2xl font-black text-slate-500/20 tabular-nums italic">{(i + 1).toString().padStart(2, '0')}</span>
-                              <div className="flex-1 space-y-4">
-                                <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed break-words">
-                                  {q.question_text || "Texto da pergunta não encontrado"}
-                                </p>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                    const optionText = q.options?.[opt];
-                                    const isCorrect = q.correct_option === opt;
-                                    
-                                    if (!optionText) return null;
-
-                                    return (
-                                      <div key={opt} className={`flex items-start gap-2 p-3 rounded-2xl border transition-all ${
-                                        isCorrect 
-                                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
-                                          : 'bg-[var(--background)] border-[var(--border)]/30 text-slate-500'
-                                      }`}>
-                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black uppercase text-[10px] border shadow-sm ${
-                                          isCorrect ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-[var(--surface)] text-slate-500 border-[var(--border)]'
-                                        }`}>
-                                          {opt}
-                                        </span>
-                                        <span className={`text-[11px] font-bold leading-tight pt-1 ${isCorrect ? 'text-emerald-500' : 'text-slate-500'}`}>
-                                          {optionText}
-                                        </span>
-                                        {isCorrect && <CheckCircle2 size={14} className="ml-auto flex-shrink-0" />}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                            
+                            <div className="space-y-2 pt-2">
+                              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
+                                Opções de Resposta 
+                                <span className="text-[8px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full border border-blue-500/20 italic">
+                                  Dica: Clique na letra (A-E) para marcar a correta
+                                </span>
+                              </label>
+                              <div className="grid grid-cols-1 gap-2">
+                                {['A', 'B', 'C', 'D', 'E'].map(l => (
+                                  <div key={l} className="flex gap-2 items-center">
+                                    <button 
+                                      onClick={() => setManualQuestion({ ...manualQuestion, correct_option: l })}
+                                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-black transition-all border-2 ${
+                                        manualQuestion.correct_option === l 
+                                          ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
+                                          : 'bg-[var(--background)] text-slate-500 border-[var(--border)] opacity-40 hover:opacity-100'
+                                      }`}
+                                    >
+                                      {l}
+                                    </button>
+                                    <input 
+                                      type="text"
+                                      placeholder={`Opção ${l}${l === 'E' ? ' (Opcional)' : ''}`}
+                                      value={manualQuestion.options[l as 'A'|'B'|'C'|'D'|'E']}
+                                      onChange={(e) => setManualQuestion({
+                                        ...manualQuestion,
+                                        options: { ...manualQuestion.options, [l]: e.target.value }
+                                      })}
+                                      className={`flex-1 bg-[var(--background)] border px-4 py-2 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all ${
+                                        manualQuestion.correct_option === l ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-[var(--border)]'
+                                      }`}
+                                    />
+                                  </div>
+                                ))}
                               </div>
-                              <button 
-                                onClick={() => removeQuestionFromPreview(i)}
-                                className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-all h-fit self-center"
-                                title="Remover esta pergunta"
-                              >
-                                <Trash2 size={18} />
-                              </button>
                             </div>
+
+                            {status && status.msg.includes("opção") && (
+                              <p className="text-[10px] font-bold text-red-500 animate-pulse text-center">{status.msg}</p>
+                            )}
+
+                            <button
+                              onClick={handleManualAdd}
+                              className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/30 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                              <Plus size={14} /> ADICIONAR À LISTA
+                            </button>
                           </div>
-                        ))}
+                        )}
                       </div>
 
-                      <div className="mt-8 grid md:grid-cols-2 gap-4">
+                      {uploadMode !== 'manual' && (
                         <button
-                          onClick={handleResetPreview}
-                          className="w-full bg-slate-500/5 text-slate-500 p-5 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border border-[var(--border)] transition-all hover:bg-slate-500/10 active:scale-95 flex justify-center items-center gap-2"
-                        >
-                          <RotateCcw size={16} /> LIMPAR E CORRIGIR
-                        </button>
-                        <button
-                          onClick={handleCreateQuiz}
-                          disabled={loading}
-                          className="w-full bg-[var(--primary)] text-white p-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-[0_10px_30px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_40px_rgba(234,179,8,0.4)] disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-3"
+                          onClick={handlePreview}
+                          disabled={loading || !title || (uploadMode === 'file' ? !file : !csvRawText)}
+                          className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-2"
                         >
                           {loading ? <Loader2 className="animate-spin" /> : (
                             <>
-                              CONFIRMAR E CRIAR AGORA 🚀
+                              <FileText size={16} /> VISUALIZAR PERGUNTAS
                             </>
                           )}
                         </button>
-                      </div>
+                      )}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="md:col-span-2 space-y-4">
-              {quizzes.map((q) => (
-                <div key={q.id} className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-[var(--background)] rounded-2xl text-slate-500 group-hover:text-[var(--primary)] transition-colors">
-                      <Gamepad2 size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-black text-lg text-[var(--foreground)] uppercase italic tracking-tighter leading-none mb-1">{q.title}</h3>
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest border border-[var(--border)] px-1.5 py-0.5 rounded">#{q.pin}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => router.push(`/admin/${q.id}`)} 
-                      className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"
-                      title="Gerenciar Partida"
-                    >
-                      <ExternalLink size={18} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteQuiz(q.id)} 
-                      className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
-                      title="Excluir Quiz"
-                    >
-                      <Trash2 size={18} />
-                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="md:col-span-2 space-y-4">
+                  {quizzes.map((q) => (
+                    <div key={q.id} className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-[var(--background)] rounded-2xl text-slate-500 group-hover:text-[var(--primary)] transition-colors">
+                          <Gamepad2 size={24} />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-lg text-[var(--foreground)] uppercase italic tracking-tighter leading-none mb-1">{q.title}</h3>
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest border border-[var(--border)] px-1.5 py-0.5 rounded">#{q.pin}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => router.push(`/admin/${q.id}`)} 
+                          className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"
+                          title="Gerenciar Partida"
+                        >
+                          <ExternalLink size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuiz(q.id)} 
+                          className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                          title="Excluir Quiz"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <AnimatePresence>
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="md:col-span-3 space-y-6"
+                >
+                  <div className="bg-[var(--surface)] p-6 md:p-8 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                      <div>
+                        <h2 className="text-2xl font-black text-[var(--foreground)] italic uppercase tracking-tighter leading-none mb-2">Conferência de Dados</h2>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">Confira se todas as perguntas foram lidas corretamente antes de finalizar</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <div className="bg-[var(--primary)]/10 px-4 py-2 rounded-2xl border border-[var(--primary)]/20 text-[var(--primary)] font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                          <FileText size={14} /> {previewQuestions.length} QUESTÕES
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                      {previewQuestions.map((q, i) => (
+                        <div key={i} className="bg-[var(--background)]/40 p-5 md:p-6 rounded-3xl border border-[var(--border)]/50 hover:border-[var(--primary)] transition-all group">
+                          <div className="flex gap-4">
+                            <span className="text-2xl font-black text-slate-500/20 tabular-nums italic">{(i + 1).toString().padStart(2, '0')}</span>
+                            <div className="flex-1 space-y-4">
+                              <p className="font-bold text-[var(--foreground)] text-sm md:text-base leading-relaxed break-words">
+                                {q.question_text || "Texto da pergunta não encontrado"}
+                              </p>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                  const optionText = q.options?.[opt];
+                                  const isCorrect = q.correct_option === opt;
+                                  
+                                  if (!optionText) return null;
+
+                                  return (
+                                    <div key={opt} className={`flex items-start gap-2 p-3 rounded-2xl border transition-all ${
+                                      isCorrect 
+                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                        : 'bg-[var(--background)] border-[var(--border)]/30 text-slate-500'
+                                    }`}>
+                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black uppercase text-[10px] border shadow-sm ${
+                                        isCorrect ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-[var(--surface)] text-slate-500 border-[var(--border)]'
+                                      }`}>
+                                        {opt}
+                                      </span>
+                                      <span className={`text-[11px] font-bold leading-tight pt-1 ${isCorrect ? 'text-emerald-500' : 'text-slate-500'}`}>
+                                        {optionText}
+                                      </span>
+                                      {isCorrect && <CheckCircle2 size={14} className="ml-auto flex-shrink-0" />}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => removeQuestionFromPreview(i)}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-all h-fit self-center"
+                              title="Remover esta pergunta"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-8 grid md:grid-cols-2 gap-4">
+                      <button
+                        onClick={handleResetPreview}
+                        className="w-full bg-slate-500/5 text-slate-500 p-5 rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest border border-[var(--border)] transition-all hover:bg-slate-500/10 active:scale-95 flex justify-center items-center gap-2"
+                      >
+                        <RotateCcw size={16} /> LIMPAR E CORRIGIR
+                      </button>
+                      <button
+                        onClick={handleCreateQuiz}
+                        disabled={loading}
+                        className="w-full bg-[var(--primary)] text-white p-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-[0_10px_30px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_40px_rgba(234,179,8,0.4)] disabled:opacity-50 transition-all active:scale-95 flex justify-center items-center gap-3"
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : (
+                          <>
+                            CONFIRMAR E CRIAR AGORA 🚀
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            )}
           </div>
         ) : activeTab === "users" ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -809,27 +801,60 @@ export default function AdminDashboard() {
                       <button
                         key={v}
                         onClick={() => handleUpdateSetting("points_per_question", v.toString())}
-                        className={`flex-1 min-w-[80px] py-4 rounded-2xl font-black text-sm transition-all border ${
-                          globalSettings.points_per_question === v
-                            ? "bg-[var(--primary)] border-[var(--primary)] text-white shadow-xl scale-[1.02]"
-                            : "bg-[var(--background)] border-[var(--border)] text-slate-500 hover:border-[var(--primary)]/30"
+                        className={`px-6 py-3 rounded-2xl font-black text-sm uppercase italic transition-all border ${
+                          globalSettings.points_per_question === v.toString()
+                            ? "bg-emerald-500 border-emerald-500 text-white shadow-xl scale-105"
+                            : "bg-[var(--background)] border-[var(--border)] text-slate-500 hover:border-emerald-500/30"
                         }`}
                       >
-                        +{v}
+                        {v}
                       </button>
                     ))}
-                  </div>
-
-                  <div className="p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-                    <p className="text-[10px] text-blue-400 font-medium leading-relaxed italic">
-                      💡 <b>Dica:</b> Alterar a pontuação no meio de uma partida afetará apenas as respostas enviadas a partir de agora. Os pontos já acumulados pelos jogadores não serão alterados.
-                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </motion.div>
         )}
+
+        {status && activeTab !== 'quizzes' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl z-50 border ${
+              status.type === 'success' 
+                ? 'bg-emerald-500 text-white border-emerald-400' 
+                : 'bg-red-500 text-white border-red-400'
+            }`}
+          >
+            {status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            {status.msg}
+          </motion.div>
+        )}
+      </div>
+
+      {/* Mobile NavBar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-transparent z-40 md:hidden">
+        <div className="bg-[var(--surface)]/80 backdrop-blur-xl border border-[var(--border)] p-2 rounded-[2rem] flex justify-between items-center shadow-2xl">
+          {[
+            { id: 'home', icon: ShieldCheck, label: 'Início', path: '/' },
+            { id: 'admin', icon: Settings, label: 'Admin', path: '/admin' },
+            { id: 'ranking', icon: Users, label: 'Ranking', path: '/leaderboard' },
+            { id: 'history', icon: RotateCcw, label: 'Histórico', path: '#' },
+            { id: 'profile', icon: Users, label: 'Perfil', path: '#' }
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => item.path !== '#' && router.push(item.path)}
+              className={`flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all ${
+                item.id === 'admin' ? 'text-[var(--primary)]' : 'text-slate-500'
+              }`}
+            >
+              <item.icon size={20} />
+              <span className="text-[8px] font-black uppercase mt-1">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
