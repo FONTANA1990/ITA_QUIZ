@@ -30,6 +30,7 @@ CREATE TRIGGER on_auth_user_created
 CREATE TABLE IF NOT EXISTS quizzes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT,
+  quiz_type TEXT DEFAULT 'classic', -- classic, event
   is_active BOOLEAN DEFAULT false,
   current_question_index INTEGER DEFAULT 0,
   status TEXT DEFAULT 'waiting', -- waiting, playing, finished
@@ -190,6 +191,7 @@ UPDATE quizzes SET pin = upper(substring(id::text, 1, 6)) WHERE pin IS NULL;
 
 -- 7. Garantia de Ordem das Perguntas
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS order_index INTEGER;
+ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS quiz_type TEXT DEFAULT 'classic';
 ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS timer_per_question INTEGER DEFAULT NULL;
 ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS question_started_at TIMESTAMP WITH TIME ZONE;
 
