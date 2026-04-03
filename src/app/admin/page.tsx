@@ -296,6 +296,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleResetRanking = async () => {
+    if (!window.confirm("ATENÇÃO: Deseja realmente ZERAR todo o ranking global? Esta ação apagará todas as pontuações acumuladas e não pode ser desfeita!")) return;
+    if (!window.confirm("TEM CERTEZA ABSOLUTA?")) return;
+
+    setLoading(true);
+    setStatus(null);
+    try {
+      const { error } = await supabase.rpc("reset_global_ranking");
+      if (error) throw error;
+      
+      setStatus({ type: "success", msg: "Ranking resetado com sucesso!" });
+      fetchUsers();
+    } catch (err: any) {
+      console.error("Erro ao resetar ranking:", err);
+      setStatus({ type: "error", msg: `Erro ao resetar: ${err.message || "Verifique permissões"}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -675,6 +695,12 @@ export default function AdminDashboard() {
               <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
                 <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase">Membros de Comunidade</h2>
                 <div className="flex items-center gap-4">
+                  <button 
+                    onClick={handleResetRanking}
+                    className="flex items-center gap-2 text-[9px] bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-xl border border-amber-500/20 transition-all font-black uppercase tracking-widest"
+                  >
+                    <RotateCcw size={12} /> Zerar Ranking
+                  </button>
                   <button 
                     onClick={handleDeleteAnonymous}
                     className="flex items-center gap-2 text-[9px] bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-xl border border-red-500/20 transition-all font-black uppercase tracking-widest"
