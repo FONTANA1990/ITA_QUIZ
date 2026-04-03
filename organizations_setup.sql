@@ -88,6 +88,11 @@ FOR SELECT USING (
     organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
 );
 
+CREATE POLICY "Owners podem gerenciar convites" ON public.invites
+FOR ALL USING (
+    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+);
+
 -- 5. RPC para criação atômica
 CREATE OR REPLACE FUNCTION public.create_organization(p_name TEXT, p_owner_id UUID)
 RETURNS UUID AS $$
