@@ -50,7 +50,7 @@ export default function Home() {
       // 1. Verificando se e a sala existe pelo PIN
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
-        .select("id, status, pin")
+        .select("id, status, pin, quiz_type")
         .eq("pin", quizId.trim().toUpperCase())
         .single();
 
@@ -85,7 +85,25 @@ export default function Home() {
         throw new Error("Erro ao vincular você a esta partida.");
       }
 
-      // 4. Salvar na sessão local e navegar
+      // 4. Se for evento, verificar se já terminou de responder tudo
+      if (quiz.quiz_type === 'event') {
+        const { data: qData } = await supabase.from("questions").select("id").eq("quiz_id", quiz.id);
+        const qIds = (qData || []).map(q => q.id);
+        
+        if (qIds.length > 0) {
+          const { count } = await supabase
+            .from("answers")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", userId)
+            .in("question_id", qIds);
+
+          if (count !== null && count >= qIds.length) {
+            throw new Error("Você já participou deste evento!");
+          }
+        }
+      }
+
+      // 5. Salvar na sessão local e navegar
       localStorage.setItem("ita_quiz_user", JSON.stringify({ id: userId, nickname: finalNickname }));
       router.push(`/play/${quiz.id}`);
     } catch (err: any) {

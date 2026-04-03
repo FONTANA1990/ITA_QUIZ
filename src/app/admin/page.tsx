@@ -384,6 +384,35 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Tempo por Pergunta</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[15, 30, 60, 90, 120].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setTimer(t)}
+                          className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                            timer === t 
+                              ? 'bg-[var(--primary)] border-[var(--primary)] text-white' 
+                              : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
+                          }`}
+                        >
+                          {t}s
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setTimer(null)}
+                        className={`py-2 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                          timer === null 
+                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500'
+                        }`}
+                      >
+                        Livre
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2">
                     <button onClick={downloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest flex items-center gap-1">
                       <Download size={12} /> Baixar Modelo CSV
                     </button>

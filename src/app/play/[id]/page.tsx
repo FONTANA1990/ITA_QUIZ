@@ -19,6 +19,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [userAnswersCount, setUserAnswersCount] = useState(0);
   const [isEventFinished, setIsEventFinished] = useState(false);
+  const [localStartTime, setLocalStartTime] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -47,16 +48,33 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
     };
   }, [quizId, contextUser]);
 
-  // Cronômetro progressivo/regressivo
+  // Gerencia o início do tempo local para eventos
   useEffect(() => {
-    if (!quiz || quiz.status !== "playing" || quiz.timer_per_question === null || !quiz.question_started_at) {
+    if (quiz?.quiz_type === 'event' && quiz?.status === 'playing' && !answered && !isEventFinished) {
+      setLocalStartTime(Date.now());
+      setIsTimeUp(false);
+    }
+  }, [userAnswersCount, quiz?.status, answered, isEventFinished]);
+
+  // Cronômetro progressivo/regressivo corrigido
+  useEffect(() => {
+    if (!quiz || quiz.status !== "playing" || quiz.timer_per_question === null || quiz.timer_per_question === 0) {
       setTimeLeft(null);
       setIsTimeUp(false);
       return;
     }
 
     const interval = setInterval(() => {
-      const startedAt = new Date(quiz.question_started_at).getTime();
+      let startedAt: number;
+      
+      if (quiz.quiz_type === 'event') {
+        if (!localStartTime) return;
+        startedAt = localStartTime;
+      } else {
+        if (!quiz.question_started_at) return;
+        startedAt = new Date(quiz.question_started_at).getTime();
+      }
+
       const now = new Date().getTime();
       const elapsed = Math.floor((now - startedAt) / 1000);
       const remaining = Math.max(0, quiz.timer_per_question - elapsed);
@@ -65,11 +83,42 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
       if (remaining <= 0) {
         setIsTimeUp(true);
         clearInterval(interval);
+        
+        // Se for evento e o tempo acabou, avança automaticamente após feedback
+        if (quiz.quiz_type === 'event' && !answered) {
+           handleTimeUpEvent();
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quiz?.current_question_index, quiz?.question_started_at, quiz?.status]);
+  }, [quiz?.current_question_index, quiz?.question_started_at, quiz?.status, localStartTime, answered]);
+
+  const handleTimeUpEvent = async () => {
+    setAnswered(true);
+    setLastAnswerCorrect(false);
+    
+    // Registrar resposta "vazia" ou errada por tempo no banco
+    const currentQuestion = questions[userAnswersCount];
+    if (currentQuestion && contextUser) {
+      await supabase.from("answers").insert([{
+        user_id: contextUser.id,
+        question_id: currentQuestion.id,
+        selected_option: "TIMEUP",
+        is_correct: false
+      }]);
+    }
+
+    setTimeout(() => {
+      const nextCount = userAnswersCount + 1;
+      setUserAnswersCount(nextCount);
+      setAnswered(false);
+      setLastAnswerCorrect(null);
+      if (nextCount >= questions.length) {
+        setIsEventFinished(true);
+      }
+    }, 3000);
+  };
 
   const fetchInitialData = async () => {
     const { data: quizData } = await supabase.from("quizzes").select("*").eq("id", quizId).single();

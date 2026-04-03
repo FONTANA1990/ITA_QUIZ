@@ -110,13 +110,32 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
 
   const nextQuestion = async () => {
     if (quiz.current_question_index + 1 >= questions.length) {
-      await supabase.from("quizzes").update({ status: "finished" }).eq("id", quizId);
-      await fetchScores();
+      await finalizeQuiz();
     } else {
       await supabase.from("quizzes").update({ 
         current_question_index: quiz.current_question_index + 1,
         question_started_at: new Date().toISOString()
       }).eq("id", quizId);
+    }
+  };
+
+  const finalizeQuiz = async () => {
+    if (!quiz || quiz.status === "finished") return;
+    if (!window.confirm("Deseja realmente finalizar esta partida?")) return;
+    
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from("quizzes").update({ 
+        status: "finished",
+        is_active: false 
+      }).eq("id", quizId);
+      
+      if (error) throw error;
+      await fetchScores();
+    } catch (err) {
+      console.error("Erro ao finalizar:", err);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -187,20 +206,22 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                     )}
                     {quiz?.status === "playing" && quiz?.quiz_type !== 'event' && (
                       <button
-                        onClick={nextQuestion}
-                        className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                        onClick={quiz.current_question_index + 1 === questions.length ? finalizeQuiz : nextQuestion}
+                        disabled={actionLoading}
+                        className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                       >
-                        <SkipForward size={18} fill="currentColor" /> 
+                        {actionLoading ? <Loader2 className="animate-spin" /> : <SkipForward size={18} fill="currentColor" />}
                         <span className="hidden md:inline">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR QUIZ" : "PRÓXIMA PERGUNTA"}</span>
                         <span className="md:hidden">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR" : "PRÓXIMA"}</span>
                       </button>
                     )}
                     {quiz?.status === "playing" && quiz?.quiz_type === 'event' && (
                         <button
-                          onClick={() => supabase.from("quizzes").update({ status: "finished" }).eq("id", quizId)}
-                          className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                          onClick={finalizeQuiz}
+                          disabled={actionLoading}
+                          className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                         >
-                          FINALIZAR EVENTO
+                          {actionLoading ? <Loader2 className="animate-spin" /> : "FINALIZAR EVENTO"}
                         </button>
                     )}
                  </div>
