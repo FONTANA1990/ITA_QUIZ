@@ -63,21 +63,21 @@ export default function Leaderboard() {
                   : "bg-[var(--surface)] border-[var(--border)]"
               }`}
             >
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black shadow-xl ${
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black shadow-xl shrink-0 ${
                   idx === 0 ? "bg-amber-500 text-white rotate-3" : 
                   idx === 1 ? "bg-slate-300 text-slate-900 -rotate-3" : 
                   idx === 2 ? "bg-orange-600 text-white rotate-2" : "bg-[var(--background)] text-slate-500"
                 }`}>
                   {idx < 3 ? <Medal size={24} strokeWidth={3} /> : <span className="text-xs font-black">{idx + 1}</span>}
                 </div>
-                <div>
-                  <h3 className="font-black text-[var(--foreground)] italic tracking-tighter text-lg uppercase leading-none">{user.nickname || "JOGADOR"}</h3>
-                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1 block tracking-[0.2em]">Competidor ITA</span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-black text-[var(--foreground)] italic tracking-tighter text-lg uppercase leading-none truncate">{user.nickname || "JOGADOR"}</h3>
+                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1 block tracking-[0.2em] truncate">Competidor ITA</span>
                 </div>
               </div>
               
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <span className={`block text-xl font-black italic tracking-tighter ${idx === 0 ? "text-amber-500" : "text-[var(--primary)]"}`}>
                   {(user.total_points || 0).toLocaleString()}
                 </span>

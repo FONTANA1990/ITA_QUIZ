@@ -13,7 +13,23 @@ export default function Home() {
   const [quizId, setQuizId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeEvents, setActiveEvents] = useState<any[]>([]);
   const router = useRouter();
+  
+  useState(() => {
+    fetchActiveEvents();
+  });
+
+  const fetchActiveEvents = async () => {
+    const { data } = await supabase
+      .from("quizzes")
+      .select("id, title, pin, created_at")
+      .eq("quiz_type", "event")
+      .eq("is_active", true)
+      .neq("status", "finished")
+      .order("created_at", { ascending: false });
+    setActiveEvents(data || []);
+  };
 
   // Se o usuário já estiver logado, preenche o nickname
   useState(() => {
@@ -77,6 +93,19 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const joinEvent = async (quiz: any) => {
+    if (!contextUser) {
+      setError("Faça login para entrar no evento.");
+      return;
+    }
+    setQuizId(quiz.pin);
+    // Pequeno delay para o feedback visual de preenchimento do PIN
+    setTimeout(() => {
+      // @ts-ignore
+      handleJoin({ preventDefault: () => {} });
+    }, 100);
   };
 
   return (
@@ -162,6 +191,45 @@ export default function Home() {
             Acesso de Administrador
           </button>
         </div>
+
+        {/* Eventos Ativos Section */}
+        {activeEvents.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-12 space-y-4"
+          >
+            <div className="flex items-center gap-2 mb-4 px-2">
+              <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-[var(--border)]" />
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] whitespace-nowrap">Eventos Ativos</h2>
+              <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-[var(--border)]" />
+            </div>
+
+            <div className="grid gap-3 overflow-hidden">
+              {activeEvents.map((event) => (
+                <motion.button
+                  key={event.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => joinEvent(event)}
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] p-5 rounded-3xl flex flex-col items-start gap-2 group transition-all hover:border-[var(--primary)]/50 hover:shadow-xl hover:shadow-[var(--primary)]/5"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[8px] font-black text-[var(--primary)] uppercase tracking-widest bg-[var(--primary)]/10 px-2 py-0.5 rounded-full border border-[var(--primary)]/20">EVENTO ABERTO</span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter opacity-60">PIN: {event.pin}</span>
+                  </div>
+                  <h3 className="font-black text-lg text-[var(--foreground)] uppercase italic tracking-tighter leading-none group-hover:text-[var(--primary)] transition-colors text-left">{event.title}</h3>
+                  <div className="w-full flex items-center justify-between mt-1">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Toque para participar</span>
+                    <div className="w-6 h-6 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-white transition-all">
+                      <Play size={12} className="fill-current" />
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

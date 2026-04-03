@@ -61,14 +61,8 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
       .order("order_index", { ascending: true });
     setQuestions(questionsData || []);
 
-    const { data: scoresData } = await supabase
-      .from("scores")
-      .select("*, users(nickname)")
-      .eq("quiz_id", quizId)
-      .order("total_points", { ascending: false });
-    
-    setScores(scoresData || []);
-    setParticipants(scoresData?.map(s => ({ id: s.user_id, nickname: s.users?.nickname || "Anônimo" })) || []);
+    await fetchScores();
+    setParticipants(scores.map(s => ({ id: s.user_id, nickname: s.users?.nickname || "Anônimo" })) || []);
     setLoading(false);
   };
 
@@ -87,8 +81,21 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "scores", filter: `quiz_id=eq.${quizId}` }, async (payload) => {
         const { data: userData } = await supabase.from("users").select("nickname").eq("id", payload.new.user_id).single();
         setParticipants((prev) => [...prev, { id: payload.new.user_id, nickname: userData?.nickname || "Novo Jogador" }]);
+        fetchScores();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "scores", filter: `quiz_id=eq.${quizId}` }, () => {
+        fetchScores();
       })
       .subscribe();
+  };
+
+  const fetchScores = async () => {
+    const { data: scoresData } = await supabase
+      .from("scores")
+      .select("*, users(nickname)")
+      .eq("quiz_id", quizId)
+      .order("total_points", { ascending: false });
+    setScores(scoresData || []);
   };
 
   const startQuiz = async () => {
@@ -104,8 +111,7 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
   const nextQuestion = async () => {
     if (quiz.current_question_index + 1 >= questions.length) {
       await supabase.from("quizzes").update({ status: "finished" }).eq("id", quizId);
-      const { data: finalScores } = await supabase.from("scores").select("*, users(nickname)").eq("quiz_id", quizId).order("total_points", { ascending: false });
-      setScores(finalScores || []);
+      await fetchScores();
     } else {
       await supabase.from("quizzes").update({ 
         current_question_index: quiz.current_question_index + 1,
@@ -145,6 +151,12 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                     <h1 className="text-2xl md:text-5xl font-black italic uppercase tracking-tighter leading-[0.9] break-words">
                       {quiz?.title}
                     </h1>
+                    {quiz?.quiz_type === 'event' && (
+                       <div className="flex items-center gap-2 mt-2">
+                         <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">Modo Evento Ativo</span>
+                         <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest italic opacity-60">Os alunos respondem sozinhos</span>
+                       </div>
+                    )}
                  </div>
               </div>
 
@@ -173,7 +185,7 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                         <Play size={18} fill="currentColor" /> COMEÇAR
                       </button>
                     )}
-                    {quiz?.status === "playing" && (
+                    {quiz?.status === "playing" && quiz?.quiz_type !== 'event' && (
                       <button
                         onClick={nextQuestion}
                         className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
@@ -182,6 +194,14 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                         <span className="hidden md:inline">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR QUIZ" : "PRÓXIMA PERGUNTA"}</span>
                         <span className="md:hidden">{currentQuestionIdx + 1 === questions.length ? "FINALIZAR" : "PRÓXIMA"}</span>
                       </button>
+                    )}
+                    {quiz?.status === "playing" && quiz?.quiz_type === 'event' && (
+                        <button
+                          onClick={() => supabase.from("quizzes").update({ status: "finished" }).eq("id", quizId)}
+                          className="flex-1 md:flex-none bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-red-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                        >
+                          FINALIZAR EVENTO
+                        </button>
                     )}
                  </div>
               </div>

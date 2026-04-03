@@ -15,6 +15,7 @@ import { useUser } from "@/context/UserContext";
 export default function AdminDashboard() {
   const { user: currentUser, globalSettings, updateGlobalSetting } = useUser();
   const [activeTab, setActiveTab] = useState<"quizzes" | "users" | "settings">("quizzes");
+  const [quizType, setQuizType] = useState<"classic" | "event">("classic");
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploadMode, setUploadMode] = useState<"file" | "text" | "manual">("file");
@@ -233,8 +234,9 @@ export default function AdminDashboard() {
         .from("quizzes")
         .insert([{ 
           title: title.trim(), 
-          status: "waiting", 
-          is_active: false,
+          status: quizType === "event" ? "playing" : "waiting", 
+          quiz_type: quizType,
+          is_active: quizType === "event",
           timer_per_question: timer
         }])
         .select()
@@ -348,6 +350,37 @@ export default function AdminDashboard() {
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
                     />
+                  </div>
+
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-1">Modo de Jogo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setQuizType("classic")}
+                        className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                          quizType === 'classic' 
+                            ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
+                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
+                        }`}
+                      >
+                        Modo Kahoot
+                      </button>
+                      <button
+                        onClick={() => setQuizType("event")}
+                        className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${
+                          quizType === 'event' 
+                            ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)]' 
+                            : 'bg-[var(--background)] border-[var(--border)] text-slate-500 opacity-60'
+                        }`}
+                      >
+                        Modo Evento
+                      </button>
+                    </div>
+                    <p className="text-[8px] text-slate-500 italic mt-1 px-1">
+                      {quizType === 'classic' 
+                        ? "• O ADM controla o telão e as perguntas não aparecem no celular." 
+                        : "• Os alunos respondem no seu próprio tempo e veem a pergunta no celular."}
+                    </p>
                   </div>
 
                   <div className="space-y-1.5 pt-2">

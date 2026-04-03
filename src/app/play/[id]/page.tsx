@@ -17,6 +17,8 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  const [userAnswersCount, setUserAnswersCount] = useState(0);
+  const [isEventFinished, setIsEventFinished] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quizzes", filter: `id=eq.${quizId}` }, (payload) => {
         const newQuiz = payload.new;
         setQuiz((prev: any) => {
-          if (newQuiz.current_question_index !== prev?.current_question_index) {
+          if (newQuiz.quiz_type !== 'event' && newQuiz.current_question_index !== prev?.current_question_index) {
             setAnswered(false);
             setLastAnswerCorrect(null);
           }
@@ -79,6 +81,19 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
       .eq("quiz_id", quizId)
       .order("order_index", { ascending: true });
     setQuestions(questionsData || []);
+
+    if (quizData?.quiz_type === 'event' && contextUser) {
+      const { count } = await supabase
+        .from("answers")
+        .select("*", { count: 'exact', head: true })
+        .eq("user_id", contextUser.id)
+        .in("question_id", (questionsData || []).map(q => q.id));
+      
+      setUserAnswersCount(count || 0);
+      if (count !== null && questionsData && count >= questionsData.length) {
+        setIsEventFinished(true);
+      }
+    }
     
     setLoading(false);
   };
@@ -99,15 +114,46 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
         is_correct: isCorrect
       }
     ]);
+
+    if (quiz.quiz_type === 'event') {
+      setTimeout(() => {
+        const nextCount = userAnswersCount + 1;
+        setUserAnswersCount(nextCount);
+        setAnswered(false);
+        setLastAnswerCorrect(null);
+        if (nextCount >= questions.length) {
+          setIsEventFinished(true);
+        }
+      }, 2000); // 2 segundos de feedback antes da próxima
+    }
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-      <Loader2 className="w-12 h-12 text-[var(--primary)] animate-spin" />
-    </div>
-  );
+  const currentQuestionIdx = quiz?.quiz_type === 'event' ? userAnswersCount : quiz?.current_question_index;
+  const currentQuestion = questions[currentQuestionIdx];
 
-  const currentQuestion = questions[quiz?.current_question_index];
+  if (isEventFinished) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] p-4 flex flex-col items-center justify-center text-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-[var(--surface)] p-12 rounded-[3.5rem] border border-[var(--border)] shadow-2xl max-w-sm w-full"
+        >
+          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 mx-auto">
+             <Trophy size={48} className="text-emerald-500" />
+          </div>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[var(--foreground)] mb-2">Parabéns!</h2>
+          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-8">Você completou o evento!</p>
+          <button 
+            onClick={() => router.push("/")}
+            className="w-full bg-[var(--primary)] text-white p-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all"
+          >
+            VOLTAR AO INÍCIO
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col p-4 overflow-hidden relative transition-colors duration-500`}>
@@ -171,7 +217,7 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                         }
                       </span>
                       <span className="text-[var(--primary)] text-xs font-black uppercase tracking-[0.3em] bg-[var(--primary)]/10 px-4 py-1 rounded-full border border-[var(--primary)]/20">
-                        Questão {quiz.current_question_index + 1}
+                        Questão {currentQuestionIdx + 1}
                       </span>
                       {timeLeft !== null && (
                         <span className={`text-xs font-black uppercase tracking-[0.3em] px-4 py-1 rounded-full border flex items-center gap-2 ${timeLeft <= 5 ? 'bg-red-500/20 border-red-500/50 text-red-500 animate-pulse' : 'bg-amber-500/10 border-amber-500/20 text-amber-500 font-black'}`}>
@@ -179,8 +225,13 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                         </span>
                       )}
                     </div>
+                    {quiz?.quiz_type === 'event' && (
+                       <p className="text-[var(--foreground)] font-bold text-center px-4 mb-4 text-xs md:text-sm uppercase tracking-tight">
+                         {currentQuestion.question_text}
+                       </p>
+                    )}
                     <h2 className="text-2xl font-black mt-2 text-[var(--foreground)] leading-tight uppercase italic tracking-tighter">
-                      {isTimeUp ? "TEMPO ESGOTADO!" : "Escolha Agora!"}
+                      {isTimeUp ? "TEMPO ESGOTADO!" : quiz?.quiz_type === 'event' ? "Qual a resposta?" : "Escolha Agora!"}
                     </h2>
                   </div>
 
