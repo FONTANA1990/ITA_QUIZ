@@ -86,16 +86,26 @@ export default function Home() {
       userId = contextUser.id;
       finalNickname = contextUser.nickname;
 
-      // 3. Vincular usuário ao quiz (Upsert Score)
-      const { error: scoreError } = await supabase
+      // 3. Vincular usuário ao quiz (Garantir entrada na tabela de scores)
+      const { data: existingScore } = await supabase
         .from("scores")
-        .upsert({ 
-          user_id: userId, 
-          quiz_id: quiz.id,
-        }, { onConflict: 'user_id, quiz_id' });
+        .select("id")
+        .eq("user_id", userId)
+        .eq("quiz_id", quiz.id)
+        .single();
 
-      if (scoreError) {
-        throw new Error("Erro ao vincular você a esta partida.");
+      if (!existingScore) {
+        const { error: scoreError } = await supabase
+          .from("scores")
+          .insert({ 
+            user_id: userId, 
+            quiz_id: quiz.id,
+            total_points: 0
+          });
+
+        if (scoreError) {
+          throw new Error("Erro ao vincular você a esta partida.");
+        }
       }
 
       // 4. Se for evento, verificar se já terminou de responder tudo

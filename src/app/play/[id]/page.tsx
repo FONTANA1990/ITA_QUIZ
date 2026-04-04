@@ -151,7 +151,8 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
     if (!contextUser || !quiz || answered || quiz.status !== "playing" || isTimeUp) return;
     
     setAnswered(true);
-    const currentQuestion = questions[quiz.current_question_index];
+    const currentQuestionIdx = quiz.quiz_type === 'event' ? userAnswersCount : quiz.current_question_index;
+    const currentQuestion = questions[currentQuestionIdx];
     const isCorrect = option === currentQuestion.correct_option;
     setLastAnswerCorrect(isCorrect);
 
