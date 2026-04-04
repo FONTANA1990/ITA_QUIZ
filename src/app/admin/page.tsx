@@ -58,7 +58,6 @@ export default function AdminDashboard() {
     if (activeOrg) {
       fetchQuizzes();
       fetchUsers();
-      fetchOrgMembers();
     }
   }, [activeOrg?.id]);
 
@@ -70,15 +69,6 @@ export default function AdminDashboard() {
       .eq("organization_id", activeOrg.id)
       .order("created_at", { ascending: false });
     setQuizzes(data || []);
-  };
-
-  const fetchOrgMembers = async () => {
-    if (!activeOrg) return;
-    const { data } = await supabase
-      .from("organization_members")
-      .select("*, users(nickname, email)")
-      .eq("organization_id", activeOrg.id);
-    setOrgMembers(data || []);
   };
 
   const fetchUsers = async () => {
@@ -134,6 +124,26 @@ export default function AdminDashboard() {
       fetchUsers();
     } catch (err: any) {
       setStatus({ type: "error", msg: `Erro ao atualizar permissão: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!activeOrg || !window.confirm("Remover este membro da sua base? Ele perderá o acesso e sairá do ranking local.")) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("organization_members")
+        .delete()
+        .eq("organization_id", activeOrg.id)
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+      setStatus({ type: "success", msg: "Membro removido da base!" });
+      fetchUsers();
+    } catch (err: any) {
+       setStatus({ type: "error", msg: err.message });
     } finally {
       setLoading(false);
     }
@@ -243,9 +253,20 @@ export default function AdminDashboard() {
   };
 
   const handleResetRanking = async () => {
-     if (!window.confirm("Zerar ranking da base?")) return;
-     // Implementar RPC de reset filtrado por org no futuro
-     setStatus({ type: "success", msg: "Ranking resetado!" });
+     if (!activeOrg || !window.confirm("Zerar ranking da base? Isso excluirá todas as pontuações registradas nesta organização!")) return;
+     setLoading(true);
+     try {
+        const { data: quizzesData } = await supabase.from("quizzes").select("id").eq("organization_id", activeOrg.id);
+        if (quizzesData && quizzesData.length > 0) {
+           const quizIds = quizzesData.map(q => q.id);
+           await supabase.from("scores").delete().in("quiz_id", quizIds);
+           setStatus({ type: "success", msg: "Ranking resetado com sucesso!" });
+        }
+     } catch (err: any) {
+        setStatus({ type: "error", msg: "Erro ao resetar ranking." });
+     } finally {
+        setLoading(false);
+     }
   };
 
   return (
@@ -256,29 +277,28 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12 bg-[var(--surface)] p-8 rounded-[3.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
           
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-[var(--background)] rounded-3xl flex items-center justify-center border-2 border-[var(--primary)] shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+          <div className="flex items-center gap-6 w-full md:w-auto">
+            <div className="hidden sm:flex w-16 h-16 bg-[var(--background)] rounded-3xl items-center justify-center border-2 border-[var(--primary)] shadow-[0_0_20px_rgba(99,102,241,0.2)]">
               <ShieldCheck className="text-[var(--primary)]" size={32} strokeWidth={2.5} />
             </div>
-            <div>
-              <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Painel <span className="text-[var(--primary)]">Admin</span></h1>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] bg-[var(--background)] px-3 py-1 rounded-full border border-[var(--border)]">Mestre do Quiz</span>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent italic tracking-tighter uppercase leading-none mb-3">Painel Admin</h1>
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="px-3 py-1 bg-[var(--background)] border border-[var(--border)] rounded-full text-[8px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none">Mestre do Quiz</span>
                 {activeOrg && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full"
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest leading-none mt-0.5">Base: {activeOrg.name}</span>
-                  </motion.div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full shadow-lg shadow-emerald-500/5 transition-all">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[8px] font-black uppercase tracking-widest leading-none truncate max-w-[120px]">Base: {activeOrg.name}</span>
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2 p-1 bg-[var(--background)] rounded-2xl border border-[var(--border)] overflow-x-auto">
+          <div className="flex gap-1.5 p-1.5 bg-[var(--background)] rounded-2xl border border-[var(--border)] overflow-x-auto custom-scrollbar max-w-full">
             {[
               { id: "quizzes", label: "Quizzes" },
               { id: "org", label: "Base" },
@@ -288,7 +308,7 @@ export default function AdminDashboard() {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[var(--primary)] text-white' : 'text-slate-500 hover:text-white'}`}
+                className={`px-3 md:px-5 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id ? 'bg-[var(--primary)] text-white' : 'text-slate-500 hover:text-white'}`}
               >
                 {tab.label}
               </button>
@@ -355,7 +375,6 @@ export default function AdminDashboard() {
 
             {activeTab === "quizzes" && (
               <div className="grid md:grid-cols-3 gap-8">
-                {/* Quiz Creation or Preview */}
                 {!isPreviewing ? (
                   <div className="md:col-span-1 space-y-6">
                     <div className="bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] shadow-2xl">
@@ -372,25 +391,16 @@ export default function AdminDashboard() {
                           className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold"
                         />
                         <div className="grid grid-cols-2 gap-2">
-                          {["classic", "event"].map(type => {
-                            const isActive = quizType === type;
-                            const colorClass = type === 'event' 
-                              ? 'border-amber-500 bg-amber-500/10 text-amber-500' 
-                              : 'border-indigo-500 bg-indigo-500/10 text-indigo-500';
-
-                            return (
-                              <button 
-                                 key={type}
-                                 onClick={() => setQuizType(type as any)}
-                                 className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${isActive ? colorClass : 'border-[var(--border)] text-slate-500 hover:border-slate-700'}`}
-                              >
-                                {type === 'classic' ? 'Kahoot' : 'Evento'}
-                              </button>
-                            );
-                          })}
+                          {["classic", "event"].map(type => (
+                            <button 
+                                key={type}
+                                onClick={() => setQuizType(type as any)}
+                                className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${quizType === type ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-[var(--border)] text-slate-500 hover:border-slate-700'}`}
+                            >
+                              {type === 'classic' ? 'Kahoot' : 'Evento'}
+                            </button>
+                          ))}
                         </div>
-
-                        {/* Points per question selection */}
                         <div className="space-y-2">
                           <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-1">Pontos por Pergunta</label>
                           <div className="flex flex-wrap gap-2">
@@ -398,11 +408,7 @@ export default function AdminDashboard() {
                               <button
                                 key={pts}
                                 onClick={() => setPointsPerQuestion(pts)}
-                                className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 transition-all ${
-                                  pointsPerQuestion === pts 
-                                    ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' 
-                                    : 'border-[var(--border)] text-slate-500 hover:border-slate-700'
-                                }`}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 transition-all ${pointsPerQuestion === pts ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-[var(--border)] text-slate-500 hover:border-slate-700'}`}
                               >
                                 {pts}
                               </button>
@@ -422,11 +428,8 @@ export default function AdminDashboard() {
                         </div>
                         {uploadMode === 'file' ? (
                           <div className="space-y-2">
-                            <input type="file" accept=".csv" aria-label="Upload de arquivo CSV" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
-                            <button 
-                              onClick={handleDownloadTemplate}
-                              className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
-                            >
+                            <input type="file" accept=".csv" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
+                            <button onClick={handleDownloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
                               <Download size={12} /> Baixar Modelo CSV
                             </button>
                           </div>
@@ -438,15 +441,12 @@ export default function AdminDashboard() {
                               className="w-full bg-[var(--background)] border p-4 rounded-xl h-24 text-[10px]"
                               placeholder="pergunta,opcao_a,opcao_b..."
                             />
-                            <button 
-                              onClick={handleDownloadTemplate}
-                              className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
-                            >
+                            <button onClick={handleDownloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
                               <Download size={12} /> Ver Formato Exemplo
                             </button>
                           </div>
                         ) : (
-                          <p className="text-[10px] text-slate-500 text-center py-4 italic">Modo manual em breve no preview...</p>
+                          <p className="text-[10px] text-slate-500 text-center py-4 italic">Modo manual... use o CSV por enquanto!</p>
                         )}
                         <button 
                           onClick={handlePreview}
@@ -475,11 +475,7 @@ export default function AdminDashboard() {
                                 return (
                                   <div 
                                     key={key} 
-                                    className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] transition-all ${
-                                      isCorrect 
-                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' 
-                                        : 'bg-[var(--surface)] border-[var(--border)] text-slate-500 opacity-60'
-                                    }`}
+                                    className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] transition-all ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-[var(--surface)] border-[var(--border)] text-slate-500 opacity-60'}`}
                                   >
                                     <span className={`w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-[var(--background)] border border-[var(--border)]'}`}>
                                       {key}
@@ -500,10 +496,11 @@ export default function AdminDashboard() {
                   </div>
                 )}
 
-                {/* Quiz List */}
                 {!isPreviewing && (
                   <div className="md:col-span-2 space-y-4">
-                    {quizzes.map(q => (
+                    {quizzes.length === 0 ? (
+                      <div className="text-center p-12 bg-[var(--surface)] rounded-[2.5rem] border border-dashed border-[var(--border)] text-slate-500 uppercase font-black text-[10px]">Nenhum quiz criado nesta base.</div>
+                    ) : quizzes.map(q => (
                       <div key={q.id} className="bg-[var(--surface)] p-4 rounded-[2rem] border border-[var(--border)] flex flex-col md:flex-row gap-4 md:items-center justify-between group">
                         <div className="flex items-center gap-4">
                            <div className="bg-[var(--background)] p-3 rounded-xl"><Gamepad2 size={20} /></div>
@@ -511,38 +508,27 @@ export default function AdminDashboard() {
                               <h3 className="font-black italic uppercase tracking-tighter text-[var(--foreground)] leading-none">{q.title}</h3>
                               <div className="flex items-center gap-2 mt-1">
                                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest border border-[var(--border)] px-1 rounded">#{q.pin}</span>
-                                 <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${
-                                   q.quiz_type === 'event' 
-                                     ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
-                                     : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
-                                 }`}>
+                                 <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${q.quiz_type === 'event' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'}`}>
                                    {q.quiz_type === 'event' ? 'Evento' : 'Kahoot'}
                                  </span>
                               </div>
                            </div>
                         </div>
-
-                        {/* Quick Points Editor */}
                         <div className="flex items-center gap-1.5 bg-[var(--background)] p-1.5 rounded-2xl border border-[var(--border)]">
                            <span className="text-[7px] font-black uppercase text-slate-500 px-2 tracking-tighter">Pontos:</span>
                            {[1, 10, 50, 100, 500].map(pts => (
                              <button
                                key={pts}
                                onClick={() => handleUpdateQuizPoints(q.id, pts)}
-                               className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${
-                                 q.points_per_question === pts 
-                                   ? 'bg-[var(--primary)] border-[var(--primary)] text-white' 
-                                   : 'bg-[var(--surface)] border-[var(--border)] text-slate-500 hover:border-slate-400'
-                               }`}
+                               className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${q.points_per_question === pts ? 'bg-[var(--primary)] border-[var(--primary)] text-white' : 'bg-[var(--surface)] border-[var(--border)] text-slate-500'}`}
                              >
                                {pts}
                              </button>
                            ))}
                         </div>
-
-                        <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all justify-end">
-                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20"><ExternalLink size={16} /></button>
-                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20"><Trash2 size={16} /></button>
+                        <div className="flex gap-2">
+                           <button onClick={() => router.push(`/admin/${q.id}`)} className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
+                           <button onClick={() => handleDeleteQuiz(q.id)} className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
@@ -559,45 +545,22 @@ export default function AdminDashboard() {
                     <h2 className="font-black italic uppercase tracking-tighter">Convidar Membro</h2>
                   </div>
                   <div className="space-y-4">
-                    <input 
-                      type="email" 
-                      placeholder="Email da pessoa" 
-                      value={inviteEmail} 
-                      onChange={e => setInviteEmail(e.target.value)}
-                      className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-xl font-bold"
-                    />
+                    <input type="email" placeholder="Email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="w-full bg-[var(--background)] border p-4 rounded-xl font-bold" />
                     <div className="flex gap-2">
                        {["member", "admin"].map(role => (
-                         <button 
-                            key={role}
-                            onClick={() => setInviteRole(role as any)}
-                            className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase border-2 ${inviteRole === role ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-[var(--border)] text-slate-500'}`}
-                         >
-                           {role === 'admin' ? 'Administrador' : 'Membro Comum'}
+                         <button key={role} onClick={() => setInviteRole(role as any)} className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase border-2 ${inviteRole === role ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-[var(--border)] text-slate-500'}`}>
+                           {role === 'admin' ? 'Administrador' : 'Membro'}
                          </button>
                        ))}
                     </div>
-                    <button 
-                      onClick={handleSendInvite}
-                      disabled={loading || !inviteEmail}
-                      className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs"
-                    >
-                      ENVIAR CONVITE
-                    </button>
+                    <button onClick={handleSendInvite} disabled={loading || !inviteEmail} className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs">ENVIAR CONVITE</button>
                   </div>
                 </div>
-                
                 <div className="bg-[var(--surface)] p-8 rounded-[3rem] border border-[var(--border)]">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Building2 size={20} className="text-blue-500" />
-                    <h2 className="font-black italic uppercase tracking-tighter">Sobre esta Base</h2>
-                  </div>
+                  <div className="flex items-center gap-2 mb-6"><Building2 size={20} className="text-blue-500" /><h2 className="font-black italic uppercase tracking-tighter">Sobre esta Base</h2></div>
                   <div className="space-y-4">
-                     <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">ID da Organização</p>
-                     <p className="bg-[var(--background)] p-4 rounded-xl font-mono text-[10px] break-all border border-[var(--border)]">{activeOrg.id}</p>
-                     <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                        Esta é a sua área restrita. Todos os quizzes, membros e configurações criados aqui são exclusivos para esta organização e não podem ser vistos por outras bases.
-                     </p>
+                     <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest">ID: {activeOrg.id}</p>
+                     <p className="text-[10px] text-slate-400 italic">Esta base isola todos os dados de quizzes e rankings.</p>
                   </div>
                 </div>
               </motion.div>
@@ -605,10 +568,10 @@ export default function AdminDashboard() {
 
             {activeTab === "users" && (
                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden shadow-2xl">
+                  <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden">
                     <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
-                      <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase">Lista de Membros</h2>
-                      <button onClick={handleResetRanking} className="flex items-center gap-2 text-[8px] bg-amber-500/10 text-amber-500 p-2 rounded-xl border border-amber-500/20 font-black uppercase">
+                      <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase text-sm">Lista de Membros</h2>
+                      <button onClick={handleResetRanking} className="flex items-center gap-2 text-[8px] bg-amber-500/10 text-amber-500 px-4 py-2 rounded-xl border border-amber-500/20 font-black uppercase hover:bg-amber-500 hover:text-white transition-all">
                         <RotateCcw size={12} /> Reset Ranking
                       </button>
                     </div>
@@ -616,32 +579,19 @@ export default function AdminDashboard() {
                        {allUsers.map(u => {
                          const isAdmin = u.base_role === 'admin';
                          return (
-                           <div key={u.id} className={`p-5 rounded-[2.5rem] border transition-all flex items-center justify-between ${isAdmin ? 'bg-purple-500/[0.03] border-purple-500/20 shadow-lg shadow-purple-500/5' : 'bg-[var(--background)]/50 border-[var(--border)]'}`}>
-                              <div className="flex items-center gap-4">
-                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black italic text-xl ${isAdmin ? 'bg-gradient-to-tr from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/20' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
-                                   {u.nickname?.[0]}
-                                 </div>
-                                 <div className="space-y-1">
-                                    <p className="font-black italic uppercase text-sm tracking-tighter leading-none">{u.nickname}</p>
-                                    <div className="flex items-center gap-2">
-                                       <span className={`text-[7px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border ${isAdmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
-                                         {isAdmin ? 'ADMINISTRADOR' : 'MEMBRO'}
-                                       </span>
-                                       {isAdmin && <ShieldCheck size={10} className="text-amber-500" />}
-                                    </div>
+                           <div key={u.id} className={`p-4 rounded-[2rem] border flex items-center justify-between gap-4 ${isAdmin ? 'bg-purple-500/[0.03] border-purple-500/20' : 'bg-[var(--background)]/50 border-[var(--border)]'}`}>
+                              <div className="flex items-center gap-3">
+                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic ${isAdmin ? 'bg-purple-500 text-white' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>{u.nickname?.[0]}</div>
+                                 <div>
+                                    <p className="font-black italic uppercase text-xs">{u.nickname}</p>
+                                    <span className="text-[7px] font-black text-slate-500 uppercase">{isAdmin ? 'ADMIN' : 'MEMBRO'}</span>
                                  </div>
                               </div>
                               {u.id !== currentUser?.id && (
-                                <button 
-                                  onClick={() => handlePromoteAdmin(u.id, u.base_role)} 
-                                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-black uppercase text-[8px] tracking-widest transition-all ${
-                                    isAdmin 
-                                      ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' 
-                                      : 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500 hover:text-white'
-                                  }`}
-                                >
-                                  {isAdmin ? 'REMOVER ADMIN' : 'TORNAR ADMIN'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => handlePromoteAdmin(u.id, u.base_role)} className={`px-2 py-1.5 rounded-lg border font-black uppercase text-[7px] ${isAdmin ? 'text-red-500 border-red-500/20' : 'text-purple-500 border-purple-500/20'}`}>{isAdmin ? 'Remove Admin' : 'Make Admin'}</button>
+                                  <button onClick={() => handleRemoveMember(u.id)} className="p-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={12} /></button>
+                                </div>
                               )}
                            </div>
                          );
@@ -653,31 +603,19 @@ export default function AdminDashboard() {
 
             {activeTab === "settings" && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid md:grid-cols-2 gap-8">
-                 <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)]">
-                    <h2 className="font-black italic uppercase mb-4">Moeda Personalizada</h2>
+                 <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)] text-center">
+                    <h2 className="font-black italic uppercase mb-4 text-sm">Moeda</h2>
                     <div className="grid grid-cols-2 gap-2">
                        {["Pontos", "Dracmas", "Talentos", "Denários"].map(c => (
-                         <button 
-                            key={c}
-                            onClick={() => updateGlobalSetting("currency", c)}
-                            className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 ${globalSettings.currency === c ? 'border-[var(--primary)]' : 'border-transparent'}`}
-                         >
-                           {c}
-                         </button>
+                         <button key={c} onClick={() => updateGlobalSetting("currency", c)} className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 ${globalSettings.currency === c ? 'border-[var(--primary)] bg-[var(--primary)]/5 text-[var(--primary)]' : 'border-transparent bg-[var(--background)] text-slate-500'}`}>{c}</button>
                        ))}
                     </div>
                  </div>
-                 <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)]">
-                    <h2 className="font-black italic uppercase mb-4">Pontuação por Acerto</h2>
+                 <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)] text-center">
+                    <h2 className="font-black italic uppercase mb-4 text-sm">Default XP</h2>
                     <div className="grid grid-cols-3 gap-2">
                          {[1, 10, 50, 100, 200, 500].map(v => (
-                           <button 
-                              key={v}
-                              onClick={() => updateGlobalSetting("points_per_question", v.toString())}
-                              className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${globalSettings.points_per_question === v ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500' : 'border-transparent bg-[var(--background)] hover:border-slate-500'}`}
-                           >
-                              {v}
-                           </button>
+                           <button key={v} onClick={() => updateGlobalSetting("points_per_question", v.toString())} className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 ${globalSettings.points_per_question === v ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500' : 'border-transparent bg-[var(--background)] text-slate-500'}`}>{v}</button>
                          ))}
                      </div>
                  </div>
@@ -686,15 +624,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {status && (
-           <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-2xl z-50 flex items-center gap-2 ${status.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-             {status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-             {status.msg}
-           </motion.div>
-        )}
+        <AnimatePresence>
+          {status && (
+             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl font-black uppercase text-[10px] shadow-2xl z-50 flex items-center gap-2 ${status.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+               {status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+               {status.msg}
+             </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Mobile NavBar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 z-40 md:hidden bg-gradient-to-t from-[var(--background)] to-transparent">
         <div className="bg-[var(--surface)]/90 backdrop-blur-xl border border-[var(--border)] p-2 rounded-[2rem] flex justify-between items-center">
             <button onClick={() => router.push('/')} className="flex-1 flex flex-col items-center gap-1 text-slate-500"><ShieldCheck size={20} /><span className="text-[7px] font-black uppercase">Home</span></button>
