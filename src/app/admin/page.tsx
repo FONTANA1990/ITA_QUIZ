@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [pointsPerQuestion, setPointsPerQuestion] = useState<number>(100);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const router = useRouter();
 
@@ -150,6 +151,7 @@ export default function AdminDashboard() {
           quiz_type: quizType,
           is_active: quizType === "event",
           timer_per_question: timer,
+          points_per_question: pointsPerQuestion,
           organization_id: activeOrg.id
         }])
         .select()
@@ -206,6 +208,19 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent = "pergunta,opcao_a,opcao_b,opcao_c,opcao_d,opcao_e,resposta_correta\nQuem descobriu o Brasil?,Pedro Alvares Cabral,Cristovão Colombo,Vasco da Gama,Americo Vespucio,Dom Pedro I,A";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "modelo_quiz_ita.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleResetRanking = async () => {
@@ -348,6 +363,26 @@ export default function AdminDashboard() {
                              </button>
                            ))}
                         </div>
+
+                        {/* Points per question selection */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-1">Pontos por Pergunta</label>
+                          <div className="flex flex-wrap gap-2">
+                            {[1, 10, 50, 100, 500].map(pts => (
+                              <button
+                                key={pts}
+                                onClick={() => setPointsPerQuestion(pts)}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 transition-all ${
+                                  pointsPerQuestion === pts 
+                                    ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]' 
+                                    : 'border-[var(--border)] text-slate-500 hover:border-slate-700'
+                                }`}
+                              >
+                                {pts}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <div className="p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] flex">
                           {["file", "text", "manual"].map(m => (
                             <button 
@@ -360,14 +395,30 @@ export default function AdminDashboard() {
                           ))}
                         </div>
                         {uploadMode === 'file' ? (
-                          <input type="file" accept=".csv" aria-label="Upload de arquivo CSV" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
+                          <div className="space-y-2">
+                            <input type="file" accept=".csv" aria-label="Upload de arquivo CSV" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
+                            <button 
+                              onClick={handleDownloadTemplate}
+                              className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
+                            >
+                              <Download size={12} /> Baixar Modelo CSV
+                            </button>
+                          </div>
                         ) : uploadMode === 'text' ? (
-                          <textarea 
-                            value={csvRawText} 
-                            onChange={e => setCsvRawText(e.target.value)} 
-                            className="w-full bg-[var(--background)] border p-4 rounded-xl h-24 text-[10px]"
-                            placeholder="pergunta,opcao_a,opcao_b..."
-                          />
+                          <div className="space-y-2">
+                            <textarea 
+                              value={csvRawText} 
+                              onChange={e => setCsvRawText(e.target.value)} 
+                              className="w-full bg-[var(--background)] border p-4 rounded-xl h-24 text-[10px]"
+                              placeholder="pergunta,opcao_a,opcao_b..."
+                            />
+                            <button 
+                              onClick={handleDownloadTemplate}
+                              className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1"
+                            >
+                              <Download size={12} /> Ver Formato Exemplo
+                            </button>
+                          </div>
                         ) : (
                           <p className="text-[10px] text-slate-500 text-center py-4 italic">Modo manual em breve no preview...</p>
                         )}
@@ -384,11 +435,38 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="md:col-span-3 bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)]">
                      <h2 className="text-xl font-black italic uppercase mb-4">Preview ({previewQuestions.length} questões)</h2>
-                     <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
+                      <div className="space-y-4 max-h-[50vh] overflow-y-auto mb-6 pr-2 custom-scrollbar">
                         {previewQuestions.map((q, i) => (
-                           <div key={i} className="text-sm bg-[var(--background)] p-3 rounded-xl">{q.question_text}</div>
+                          <div key={i} className="bg-[var(--background)] p-5 rounded-3xl border border-[var(--border)] space-y-3">
+                            <div className="flex items-start gap-3">
+                              <span className="w-6 h-6 flex items-center justify-center bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[10px] font-black text-slate-500">{i + 1}</span>
+                              <p className="text-sm font-bold text-[var(--foreground)]">{q.question_text}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-9">
+                              {Object.entries(q.options).map(([key, value]) => {
+                                if (!value) return null;
+                                const isCorrect = q.correct_option === key;
+                                return (
+                                  <div 
+                                    key={key} 
+                                    className={`flex items-center gap-2 p-2 rounded-xl border text-[11px] transition-all ${
+                                      isCorrect 
+                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' 
+                                        : 'bg-[var(--surface)] border-[var(--border)] text-slate-500 opacity-60'
+                                    }`}
+                                  >
+                                    <span className={`w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-[var(--background)] border border-[var(--border)]'}`}>
+                                      {key}
+                                    </span>
+                                    <span className="flex-1 truncate">{value as string}</span>
+                                    {isCorrect && <CheckCircle2 size={12} strokeWidth={3} />}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         ))}
-                     </div>
+                      </div>
                      <div className="flex gap-4">
                         <button onClick={handleResetPreview} className="flex-1 p-4 bg-slate-500/10 rounded-2xl font-black uppercase text-xs">Voltar</button>
                         <button onClick={handleCreateQuiz} className="flex-2 p-4 bg-[var(--primary)] text-white rounded-2xl font-black uppercase text-xs">Criar Quiz</button>
