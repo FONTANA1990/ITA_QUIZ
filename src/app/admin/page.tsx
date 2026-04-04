@@ -565,36 +565,67 @@ export default function AdminDashboard() {
             )}
 
             {activeTab === "users" && (
-               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  <div className="bg-[var(--surface)] rounded-[2.5rem] border border-[var(--border)] overflow-hidden">
-                    <div className="p-6 border-b border-[var(--border)] flex justify-between items-center bg-[var(--background)]/50">
-                      <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase text-sm">Lista de Membros</h2>
-                      <button onClick={handleResetRanking} className="flex items-center gap-2 text-[8px] bg-amber-500/10 text-amber-500 px-4 py-2 rounded-xl border border-amber-500/20 font-black uppercase hover:bg-amber-500 hover:text-white transition-all">
-                        <RotateCcw size={12} /> Reset Ranking
-                      </button>
+               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-center bg-[var(--surface)] p-6 rounded-[2.5rem] border border-[var(--border)] gap-4 mb-2">
+                    <div className="flex items-center gap-3">
+                      <Users size={22} className="text-[var(--primary)]" />
+                      <div>
+                        <h2 className="font-black text-[var(--foreground)] italic tracking-tighter uppercase text-lg leading-none">Membros</h2>
+                        <p className="text-[8px] font-black uppercase text-slate-500 tracking-widest mt-1">Gestão da Base</p>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                       {allUsers.map(u => {
-                         const isAdmin = u.base_role === 'admin';
-                         return (
-                           <div key={u.id} className={`p-4 rounded-[2rem] border flex items-center justify-between gap-4 ${isAdmin ? 'bg-purple-500/[0.03] border-purple-500/20' : 'bg-[var(--background)]/50 border-[var(--border)]'}`}>
-                              <div className="flex items-center gap-3">
-                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black italic ${isAdmin ? 'bg-purple-500 text-white' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>{u.nickname?.[0]}</div>
-                                 <div>
-                                    <p className="font-black italic uppercase text-xs">{u.nickname}</p>
-                                    <span className="text-[7px] font-black text-slate-500 uppercase">{isAdmin ? 'ADMIN' : 'MEMBRO'}</span>
-                                 </div>
+                    <button onClick={handleResetRanking} title="Zerar Ranking da Base" aria-label="Zerar Ranking da Base" className="w-full sm:w-auto flex items-center justify-center gap-2 text-[9px] bg-amber-500/10 text-amber-500 px-5 py-3 rounded-2xl border border-amber-500/20 font-black uppercase hover:bg-amber-500 hover:text-white transition-all shadow-lg shadow-amber-500/5">
+                      <RotateCcw size={14} /> Reset Ranking
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                     {allUsers.map(u => {
+                       const isAdmin = u.base_role === 'admin';
+                       return (
+                         <div key={u.id} className={`p-4 rounded-3xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 ${isAdmin ? 'bg-purple-500/[0.03] border-purple-500/20 shadow-xl shadow-purple-500/[0.02]' : 'bg-[var(--surface)] border-[var(--border)]'}`}>
+                            <div className="flex items-center gap-4 w-full sm:w-auto">
+                               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black italic text-xl shrink-0 ${isAdmin ? 'bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/20' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+                                 {u.nickname?.[0]}
+                               </div>
+                               <div className="min-w-0 flex-1">
+                                  <p className="font-black italic uppercase text-sm tracking-tighter leading-none truncate">{u.nickname}</p>
+                                  <div className="flex items-center gap-1.5 mt-1.5">
+                                     <span className={`text-[7px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border ${isAdmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
+                                       {isAdmin ? 'ADMIN' : 'MEMBRO'}
+                                     </span>
+                                     {isAdmin && <ShieldCheck size={10} className="text-amber-500" />}
+                                  </div>
+                               </div>
+                            </div>
+
+                            {u.id !== currentUser?.id && (
+                              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <button 
+                                  onClick={() => handlePromoteAdmin(u.id, u.base_role)} 
+                                  title={isAdmin ? "Remover Admin" : "Tornar Admin"}
+                                  aria-label={isAdmin ? "Remover Admin" : "Tornar Admin"}
+                                  className={`flex-1 sm:flex-none px-4 py-2.5 rounded-2xl border font-black uppercase text-[8px] tracking-widest transition-all ${
+                                    isAdmin 
+                                      ? 'text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' 
+                                      : 'text-purple-500 border-purple-500/20 hover:bg-purple-500 hover:text-white'
+                                  }`}
+                                >
+                                  {isAdmin ? 'Rebaixar' : 'Promover'}
+                                </button>
+                                <button 
+                                  onClick={() => handleRemoveMember(u.id)} 
+                                  title="Remover Membro" 
+                                  aria-label="Remover Membro" 
+                                  className="p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/5 group"
+                                >
+                                  <Trash2 size={14} className="group-hover:scale-110 transition-transform" />
+                                </button>
                               </div>
-                              {u.id !== currentUser?.id && (
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => handlePromoteAdmin(u.id, u.base_role)} className={`px-2 py-1.5 rounded-lg border font-black uppercase text-[7px] ${isAdmin ? 'text-red-500 border-red-500/20' : 'text-purple-500 border-purple-500/20'}`}>{isAdmin ? 'Remove Admin' : 'Make Admin'}</button>
-                                  <button onClick={() => handleRemoveMember(u.id)} title="Remover Membro" aria-label="Remover Membro" className="p-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={12} /></button>
-                                </div>
-                              )}
-                           </div>
-                         );
-                       })}
-                    </div>
+                            )}
+                         </div>
+                       );
+                     })}
                   </div>
                </motion.div>
             )}
