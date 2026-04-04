@@ -273,32 +273,26 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
         
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12 bg-[var(--surface)] p-8 rounded-[3.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
-          
-          <div className="flex items-center gap-6 w-full md:w-auto">
-            <div className="hidden sm:flex w-16 h-16 bg-[var(--background)] rounded-3xl items-center justify-center border-2 border-[var(--primary)] shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-              <ShieldCheck className="text-[var(--primary)]" size={32} strokeWidth={2.5} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent italic tracking-tighter uppercase leading-none mb-3">Painel Admin</h1>
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="px-3 py-1 bg-[var(--background)] border border-[var(--border)] rounded-full text-[8px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none">Mestre do Quiz</span>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12 py-4">
+          <div className="flex flex-col items-center md:items-start gap-4 w-full md:w-auto text-center md:text-left">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent italic tracking-tighter uppercase leading-none mb-3">Painel Admin</h1>
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start items-center">
+                <span className="px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-[8px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none">Mestre do Quiz</span>
                 {activeOrg && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full shadow-lg shadow-emerald-500/5 transition-all">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full shadow-lg shadow-emerald-500/5">
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                     </span>
-                    <span className="text-[8px] font-black uppercase tracking-widest leading-none truncate max-w-[120px]">Base: {activeOrg.name}</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">Base: {activeOrg.name}</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-1.5 p-1.5 bg-[var(--background)] rounded-2xl border border-[var(--border)] overflow-x-auto custom-scrollbar max-w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto p-1.5 bg-[var(--surface)] rounded-[2rem] border border-[var(--border)]">
             {[
               { id: "quizzes", label: "Quizzes" },
               { id: "org", label: "Base" },
@@ -308,7 +302,7 @@ export default function AdminDashboard() {
               <button 
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3 md:px-5 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id ? 'bg-[var(--primary)] text-white' : 'text-slate-500 hover:text-white'}`}
+                className={`px-4 py-2.5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-[var(--primary)] text-white shadow-lg shadow-indigo-500/30' : 'text-slate-500 hover:text-white'}`}
               >
                 {tab.label}
               </button>
