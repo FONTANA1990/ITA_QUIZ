@@ -353,15 +353,22 @@ export default function AdminDashboard() {
                           className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold"
                         />
                         <div className="grid grid-cols-2 gap-2">
-                           {["classic", "event"].map(type => (
-                             <button 
-                                key={type}
-                                onClick={() => setQuizType(type as any)}
-                                className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 ${quizType === type ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-[var(--border)] text-slate-500'}`}
-                             >
-                               {type === 'classic' ? 'Kahoot' : 'Evento'}
-                             </button>
-                           ))}
+                          {["classic", "event"].map(type => {
+                            const isActive = quizType === type;
+                            const colorClass = type === 'event' 
+                              ? 'border-amber-500 bg-amber-500/10 text-amber-500' 
+                              : 'border-indigo-500 bg-indigo-500/10 text-indigo-500';
+
+                            return (
+                              <button 
+                                 key={type}
+                                 onClick={() => setQuizType(type as any)}
+                                 className={`py-3 rounded-xl text-[9px] font-black uppercase border-2 transition-all ${isActive ? colorClass : 'border-[var(--border)] text-slate-500 hover:border-slate-700'}`}
+                              >
+                                {type === 'classic' ? 'Kahoot' : 'Evento'}
+                              </button>
+                            );
+                          })}
                         </div>
 
                         {/* Points per question selection */}
@@ -483,7 +490,16 @@ export default function AdminDashboard() {
                            <div className="bg-[var(--background)] p-3 rounded-xl"><Gamepad2 size={20} /></div>
                            <div>
                               <h3 className="font-black italic uppercase tracking-tighter text-[var(--foreground)]">{q.title}</h3>
-                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest border border-[var(--border)] px-1 rounded">#{q.pin}</span>
+                              <div className="flex items-center gap-2">
+                                 <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest border border-[var(--border)] px-1 rounded">#{q.pin}</span>
+                                 <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${
+                                   q.quiz_type === 'event' 
+                                     ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                                     : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
+                                 }`}>
+                                   {q.quiz_type === 'event' ? 'Evento' : 'Kahoot'}
+                                 </span>
+                              </div>
                            </div>
                         </div>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
