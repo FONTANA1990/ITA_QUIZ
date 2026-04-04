@@ -281,9 +281,16 @@ export default function AdminDashboard() {
                 <button 
                   onClick={() => createOrganization(newOrgName)} 
                   disabled={!newOrgName || loading}
-                  className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs"
+                  className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  CRIAR BASE
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      CRIANDO...
+                    </>
+                  ) : (
+                    "CRIAR BASE"
+                  )}
                 </button>
               </div>
            </motion.div>

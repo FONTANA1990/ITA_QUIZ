@@ -242,11 +242,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createOrganization = async (name: string) => {
-    if (!user) {
-      console.error("Usuário não autenticado para criar organização");
-      return;
-    }
+    if (!user || loading) return;
     
+    setLoading(true);
     try {
       const { data: orgId, error } = await supabase.rpc("create_organization", {
         p_name: name,
@@ -261,16 +259,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.log("Organização criada com ID:", orgId);
       
       // Força a atualização da lista e seleciona a nova org
-      await fetchUserOrganizations(user.id);
+      await fetchUserOrganizations(user.id, orgId);
       
-      // Se a lista foi atualizada, o fetchUserOrganizations já deve ter setado uma activeOrg
-      // mas vamos garantir que a nova org seja a ativa se possível
       if (orgId) {
         localStorage.setItem("ita_quiz_active_org", orgId);
       }
     } catch (err: any) {
       console.error("Falha ao criar organização:", err);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
