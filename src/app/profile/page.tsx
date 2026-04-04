@@ -17,8 +17,12 @@ const avatars = [
 ];
 
 export default function Profile() {
-  const { preferences, setTheme, setAvatar, user, logout, pendingInvites, acceptInvite, declineInvite } = useUser();
-  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth" | "invites">("menu");
+  const { 
+    preferences, setTheme, setAvatar, user, logout, 
+    pendingInvites, acceptInvite, declineInvite,
+    activeOrg, organizations, switchOrganization
+  } = useUser();
+  const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth" | "invites" | "orgs">("menu");
   const router = useRouter();
   
   // States do Login
@@ -108,9 +112,21 @@ export default function Profile() {
               <h2 className="mt-6 text-3xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none text-center">
                 {user?.nickname || "JOGADOR ITA"}
               </h2>
-              <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3 bg-[var(--surface)] px-4 py-1.5 rounded-full border border-[var(--border)]">
-                 Nível {level} • {getRank()}
-              </span>
+              <div className="flex flex-col items-center gap-2 mt-3">
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] bg-[var(--surface)] px-4 py-1.5 rounded-full border border-[var(--border)]">
+                   Nível {level} • {getRank()}
+                </span>
+                {activeOrg && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2 px-3 py-1 bg-[var(--primary)]/10 border border-[var(--primary)]/20 rounded-lg"
+                  >
+                    <Building2 size={12} className="text-[var(--primary)]" />
+                    <span className="text-[9px] font-black text-[var(--primary)] uppercase tracking-wider italic">Base: {activeOrg.name}</span>
+                  </motion.div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -132,6 +148,14 @@ export default function Profile() {
                   icon={Bell} 
                   color="text-amber-500 animate-pulse" 
                   onClick={() => setActiveTab("invites")} 
+                />
+              )}
+              {user && (
+                <MenuButton 
+                  label="Minhas Bases" 
+                  icon={Building2} 
+                  color="text-emerald-500" 
+                  onClick={() => setActiveTab("orgs")} 
                 />
               )}
               {!user && (
@@ -384,6 +408,59 @@ export default function Profile() {
                     </div>
                   ))
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "orgs" && (
+            <motion.div
+              key="orgs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex flex-col flex-1"
+            >
+              {renderHeader("Minhas Bases")}
+              <div className="space-y-3">
+                {organizations.map((org) => (
+                  <button
+                    key={org.id}
+                    onClick={() => {
+                      switchOrganization(org.id);
+                      setActiveTab("menu");
+                    }}
+                    className={`w-full flex items-center justify-between p-5 rounded-[2rem] border transition-all ${
+                      activeOrg?.id === org.id 
+                        ? "bg-[var(--primary)]/10 border-[var(--primary)]" 
+                        : "bg-[var(--surface)] border-[var(--border)] hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2.5 rounded-2xl bg-[var(--background)] ${activeOrg?.id === org.id ? 'text-[var(--primary)] shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'text-slate-500'}`}>
+                        <Building2 size={20} strokeWidth={3} />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-black text-[var(--foreground)] text-sm uppercase italic tracking-tighter block">{org.name}</span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">
+                          {org.role === 'admin' ? 'Administrador' : 'Membro'}
+                        </span>
+                      </div>
+                    </div>
+                    {activeOrg?.id === org.id && (
+                      <div className="bg-[var(--primary)] p-1 rounded-full text-white">
+                        <Check size={12} strokeWidth={4} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+
+                <button 
+                  onClick={() => router.push('/admin')}
+                  className="w-full mt-4 py-6 rounded-[2rem] border-2 border-dashed border-[var(--border)] text-slate-500 font-black uppercase text-[10px] tracking-[0.2em] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 hover:text-[var(--primary)] transition-all flex flex-col items-center gap-2"
+                >
+                  <Building2 size={24} className="opacity-30" />
+                  + Criar Nova Base
+                </button>
               </div>
             </motion.div>
           )}

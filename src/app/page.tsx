@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
 
 export default function Home() {
-  const { user: contextUser } = useUser();
+  const { user: contextUser, activeOrg, loading: userLoading } = useUser();
   const [nickname, setNickname] = useState("");
   const [quizId, setQuizId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,17 +17,30 @@ export default function Home() {
   const router = useRouter();
   
   useEffect(() => {
-    fetchActiveEvents();
-  }, []);
+    if (!userLoading) {
+      fetchActiveEvents();
+    }
+  }, [activeOrg?.id, userLoading]);
 
   const fetchActiveEvents = async () => {
-    const { data } = await supabase
+    let query = supabase
       .from("quizzes")
-      .select("id, title, pin, created_at")
+      .select("id, title, pin, created_at, organization_id")
       .eq("quiz_type", "event")
       .eq("is_active", true)
-      .neq("status", "finished")
-      .order("created_at", { ascending: false });
+      .neq("status", "finished");
+
+    // Se estiver logado e tiver uma base ativa, filtra por ela.
+    // Se não estiver logado, não mostra eventos privados (que possuem organization_id)
+    if (activeOrg) {
+      query = query.eq("organization_id", activeOrg.id);
+    } else {
+      // Se não houver base ativa, mostra apenas eventos "globais" (sem org)
+      // ou podemos optar por não mostrar nada para incentivar o login/seleção de base
+      query = query.is("organization_id", null);
+    }
+
+    const { data } = await query.order("created_at", { ascending: false });
     setActiveEvents(data || []);
   };
 
@@ -219,7 +232,14 @@ export default function Home() {
           >
             <div className="flex items-center gap-2 mb-4 px-2">
               <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-[var(--border)]" />
-              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] whitespace-nowrap">Eventos Ativos</h2>
+              <div className="flex flex-col items-center">
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] whitespace-nowrap">Eventos Ativos</h2>
+                {activeOrg && (
+                  <span className="text-[8px] font-bold text-[var(--primary)] uppercase tracking-wider mt-1 opacity-80">
+                    🏢 Base: {activeOrg.name}
+                  </span>
+                )}
+              </div>
               <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-[var(--border)]" />
             </div>
 

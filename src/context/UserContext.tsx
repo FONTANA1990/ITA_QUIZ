@@ -109,7 +109,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchUserOrganizations = async (userId: string) => {
+  const fetchUserOrganizations = async (userId: string, preferredOrgId?: string) => {
     try {
       const { data: members, error } = await supabase
         .from("organization_members")
@@ -131,8 +131,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         
         setOrganizations(orgs);
 
-        // Tenta recuperar a última base ativa do localStorage
-        const savedOrgId = localStorage.getItem("ita_quiz_active_org");
+        // Ordem de prioridade para definir a base ativa:
+        // 1. preferredOrgId (casos de convite aceito agora ou criação)
+        // 2. localStorage (última base usada)
+        // 3. Primeira base da lista (se existir)
+        const savedOrgId = preferredOrgId || localStorage.getItem("ita_quiz_active_org");
         const found = orgs.find(o => o.id === savedOrgId) || orgs[0];
         
         if (found) {
@@ -282,16 +285,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const acceptInvite = async (inviteId: string) => {
     if (!user) return;
     try {
-      // Chama o RPC que lida com a transação e permissões de forma segura
+      // 1. Busca o ID da organização antes de aceitar para poder trocar para ela depois
+      const invite = pendingInvites.find(i => i.id === inviteId);
+      const targetOrgId = invite?.organization_id;
+
+      // 2. Chama o RPC que lida com a transação
       const { error } = await supabase.rpc('accept_invite', {
         p_invite_id: inviteId
       });
 
       if (error) throw error;
 
-      // Recarrega as organizações e convites para atualizar o estado
+      // 3. Recarrega as organizações passando a nova base como preferencial
       await Promise.all([
-        fetchUserOrganizations(user.id),
+        fetchUserOrganizations(user.id, targetOrgId),
         fetchPendingInvites(user.email)
       ]);
     } catch (error) {

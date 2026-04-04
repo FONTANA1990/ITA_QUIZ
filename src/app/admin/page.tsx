@@ -218,13 +218,33 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-[var(--foreground)] italic tracking-tighter uppercase leading-none mb-2">Administração</h1>
-            <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.2em]">Painel de Controle</p>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12 bg-[var(--surface)] p-8 rounded-[3.5rem] border border-[var(--border)] shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
+          
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-[var(--background)] rounded-3xl flex items-center justify-center border-2 border-[var(--primary)] shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+              <ShieldCheck className="text-[var(--primary)]" size={32} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Painel <span className="text-[var(--primary)]">Admin</span></h1>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] bg-[var(--background)] px-3 py-1 rounded-full border border-[var(--border)]">Mestre do Quiz</span>
+                {activeOrg && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest leading-none mt-0.5">Base: {activeOrg.name}</span>
+                  </motion.div>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2 p-1 bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-x-auto">
+
+          <div className="flex gap-2 p-1 bg-[var(--background)] rounded-2xl border border-[var(--border)] overflow-x-auto">
             {[
               { id: "quizzes", label: "Quizzes" },
               { id: "org", label: "Base" },
