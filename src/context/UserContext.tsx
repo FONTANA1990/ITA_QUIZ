@@ -282,32 +282,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const acceptInvite = async (inviteId: string) => {
     if (!user) return;
     try {
-      // 1. Atualiza convite para aceito
-      const { data: invite, error: invError } = await supabase
-        .from("invites")
-        .update({ status: 'accepted' })
-        .eq("id", inviteId)
-        .select()
-        .single();
+      // Chama o RPC que lida com a transação e permissões de forma segura
+      const { error } = await supabase.rpc('accept_invite', {
+        p_invite_id: inviteId
+      });
 
-      if (invError) throw invError;
+      if (error) throw error;
 
-      // 2. Adiciona como membro
-      const { error: memError } = await supabase
-        .from("organization_members")
-        .insert({
-          organization_id: invite.organization_id,
-          user_id: user.id,
-          role: invite.role
-        });
-
-      if (memError) throw memError;
-
-      await fetchUserOrganizations(user.id);
-      await fetchPendingInvites(user.email);
-    } catch (err) {
-      console.error("Erro ao aceitar convite:", err);
-      throw err;
+      // Recarrega as organizações e convites para atualizar o estado
+      await Promise.all([
+        fetchUserOrganizations(user.id),
+        fetchPendingInvites(user.email)
+      ]);
+    } catch (error) {
+      console.error("Erro ao aceitar convite:", error);
+      throw error;
     }
   };
 

@@ -111,3 +111,35 @@ BEGIN
     RETURN v_org_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. RPC para aceitar convite
+CREATE OR REPLACE FUNCTION public.accept_invite(p_invite_id UUID)
+RETURNS VOID AS $$
+DECLARE
+    v_org_id UUID;
+    v_role TEXT;
+    v_email TEXT;
+BEGIN
+    -- 1. Pega o email do usuário atual do auth.users (via public.users para facilidade)
+    SELECT email INTO v_email FROM public.users WHERE id = auth.uid();
+
+    -- 2. Busca o convite pendente para este email
+    SELECT organization_id, role INTO v_org_id, v_role
+    FROM public.invites
+    WHERE id = p_invite_id AND invited_email = v_email AND status = 'pending';
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Convite não encontrado ou já processado.';
+    END IF;
+
+    -- 3. Insere o membro (SECURITY DEFINER garante a permissão)
+    INSERT INTO public.organization_members (organization_id, user_id, role)
+    VALUES (v_org_id, auth.uid(), v_role)
+    ON CONFLICT (organization_id, user_id) DO UPDATE SET role = EXCLUDED.role;
+
+    -- 4. Marca o convite como aceito
+    UPDATE public.invites
+    SET status = 'accepted'
+    WHERE id = p_invite_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
