@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const [pointsPerQuestion, setPointsPerQuestion] = useState<number>(100);
+  const [pointsPerQuestion, setPointsPerQuestion] = useState<number>(1);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const router = useRouter();
 
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto p-1.5 bg-[var(--surface)] rounded-[2rem] border border-[var(--border)]">
+          <div className="flex flex-wrap justify-center md:justify-end gap-2 w-full md:w-auto p-1.5 bg-[var(--surface)] rounded-[2rem] border border-[var(--border)] shadow-xl">
             {[
               { id: "quizzes", label: "Quizzes" },
               { id: "org", label: "Base" },
@@ -307,6 +307,13 @@ export default function AdminDashboard() {
                 {tab.label}
               </button>
             ))}
+            <div className="w-[1px] bg-[var(--border)] mx-1 self-stretch hidden sm:block" />
+            <button 
+              onClick={() => router.push('/admin/reports')}
+              className="px-4 py-2.5 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white flex items-center gap-2"
+            >
+              <FileText size={14} /> Relatórios
+            </button>
           </div>
         </div>
 

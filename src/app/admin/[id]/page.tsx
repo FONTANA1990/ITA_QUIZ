@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Play, SkipForward, Trophy, BarChart2, Loader2, Clock, Crown, ArrowLeft } from "lucide-react";
+import { Users, Play, SkipForward, Trophy, BarChart2, Loader2, Clock, Crown, ArrowLeft, Download, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 
@@ -121,22 +121,91 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
 
   const finalizeQuiz = async () => {
     if (!quiz || quiz.status === "finished") return;
-    if (!window.confirm("Deseja realmente finalizar esta partida?")) return;
+    if (!window.confirm("Deseja realmente finalizar esta partida? O relatório será gerado e salvo.")) return;
     
     setActionLoading(true);
     try {
-      const { error } = await supabase.from("quizzes").update({ 
+      // 1. Atualizar status do quiz
+      const { error: updateError } = await supabase.from("quizzes").update({ 
         status: "finished",
         is_active: false 
       }).eq("id", quizId);
       
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 2. Coletar dados para o relatório
+      const { data: finalScores } = await supabase
+        .from("scores")
+        .select("*, users(nickname)")
+        .eq("quiz_id", quizId);
+
+      // Pegar contagem de acertos por usuário
+      const { data: allAnswers } = await supabase
+        .from("answers")
+        .select("user_id, is_correct, question_id")
+        .in("question_id", questions.map(q => q.id));
+      
+      let statsMap: any = {};
+      allAnswers?.forEach(ans => {
+        if (ans.is_correct) {
+          statsMap[ans.user_id] = (statsMap[ans.user_id] || 0) + 1;
+        }
+      });
+
+      const reportRows = (finalScores || []).map(s => ({
+        user_id: s.user_id,
+        nickname: s.users?.nickname || "Anônimo",
+        total_questions: questions.length,
+        correct_answers: statsMap[s.user_id] || 0,
+        final_score: s.total_points
+      }));
+
+      // 3. Salvar na tabela quiz_reports
+      await supabase.from("quiz_reports").insert({
+        quiz_id: quizId,
+        quiz_title: quiz.title,
+        quiz_type: quiz.quiz_type,
+        report_data: reportRows
+      });
+
       await fetchScores();
     } catch (err) {
       console.error("Erro ao finalizar:", err);
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const downloadCSV = () => {
+    if (scores.length === 0) return;
+    
+    const headers = ["Nome do Usuário", "Total de Perguntas", "Acertos", "Pontuação Final"];
+    const rows = scores.map(s => {
+      const ptsPerQ = quiz?.points_per_question || 1;
+      const correct = Math.floor(s.total_points / ptsPerQ);
+
+      return [
+        s.users?.nickname || "Anônimo",
+        questions.length,
+        correct,
+        s.total_points
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `relatorio_quiz_${quiz.title.replace(/\s+/g, '_')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) return (
@@ -310,6 +379,61 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full" />
                     <Trophy className="w-20 h-20 text-amber-500 mx-auto mb-6 relative z-10" />
                     <h2 className="text-6xl font-black italic uppercase tracking-tighter relative z-10">Ranking Final</h2>
+                    
+                    <div className="mt-8 flex justify-center gap-4 relative z-10">
+                       <button 
+                         onClick={downloadCSV}
+                         className="flex items-center gap-2 bg-[var(--primary)] text-white px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:opacity-90 transition-all shadow-lg shadow-indigo-500/20"
+                       >
+                         <Download size={18} /> Baixar Relatório (CSV)
+                       </button>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Relatório */}
+                  <div className="bg-[var(--surface)] p-8 rounded-[3.5rem] border border-[var(--border)] shadow-2xl">
+                    <div className="flex items-center gap-3 mb-8">
+                       <div className="p-3 bg-[var(--primary)]/10 rounded-2xl text-[var(--primary)]">
+                          <BarChart2 size={24} />
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-black uppercase italic tracking-tighter">Relatório de Performance</h3>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Detalhamento por participante</p>
+                       </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                       <table className="w-full text-left border-collapse">
+                          <thead>
+                             <tr className="border-b border-[var(--border)]">
+                                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-500 px-4">Nickname</th>
+                                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-500 px-4">Perguntas</th>
+                                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-500 px-4">Acertos</th>
+                                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-slate-500 px-4 text-right">Pontuação</th>
+                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--border)]/50">
+                             {scores.map((s, idx) => {
+                               const ptsPerQ = quiz?.points_per_question || 1;
+                               const correct = Math.floor(s.total_points / ptsPerQ);
+                               return (
+                                 <tr key={s.id} className="group hover:bg-[var(--primary)]/5 transition-colors">
+                                    <td className="py-4 px-4 font-black italic uppercase tracking-tighter text-[var(--foreground)]">{s.users?.nickname}</td>
+                                    <td className="py-4 px-4 text-slate-500 font-bold">{questions.length}</td>
+                                    <td className="py-4 px-4 font-black text-[var(--correct)] flex items-center gap-2">
+                                       {correct} <span className="text-[10px] opacity-40">/ {questions.length}</span>
+                                    </td>
+                                    <td className="py-4 px-4 text-right">
+                                       <span className="bg-[var(--primary)]/10 text-[var(--primary)] px-4 py-1.5 rounded-full font-black text-xs tracking-tighter italic">
+                                          {s.total_points} {globalSettings.currency}
+                                       </span>
+                                    </td>
+                                 </tr>
+                               );
+                             })}
+                          </tbody>
+                       </table>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
