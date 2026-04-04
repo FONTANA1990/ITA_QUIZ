@@ -60,78 +60,110 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen p-4 bg-[var(--background)] transition-colors duration-300 pb-24">
-      <div className="mt-8 mb-8 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full mb-3 shadow-lg shadow-emerald-500/5">
-           <Info size={12} />
-           <span className="text-[9px] font-black uppercase tracking-widest leading-none">Ranking da Base: {activeOrg?.name || 'Carregando...'}</span>
+    <div className="flex flex-col min-h-screen bg-[var(--background)] p-4 md:p-8 pb-32">
+      <div className="max-w-3xl mx-auto w-full space-y-12">
+        
+        {/* Header Section */}
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-full mb-4 shadow-lg shadow-emerald-500/5">
+             <span className="relative flex h-1.5 w-1.5">
+               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+             </span>
+             <span className="text-[9px] font-black uppercase tracking-widest leading-none">Ranking da Base: {activeOrg?.name}</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent italic tracking-tighter uppercase leading-none text-center">
+            Top Competidores
+          </h1>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-3 text-center opacity-60">Disputa local exclusiva</p>
         </div>
-        <h1 className="text-4xl font-black bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] bg-clip-text text-transparent italic tracking-tighter uppercase leading-none">
-          TOP COMPETIDORES
-        </h1>
-        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Disputa local exclusiva</p>
-      </div>
 
-      <div className="space-y-3">
-        {loading ? (
-          <div className="flex justify-center p-20">
-            <Loader2 className="animate-spin text-[var(--primary)]" size={40} />
-          </div>
-        ) : !activeOrg ? (
-           <div className="text-center p-10 opacity-50">
-              <p className="text-xs font-black uppercase tracking-widest">Selecione uma base no perfil...</p>
-           </div>
-        ) : rankings.length === 0 ? (
-          <div className="text-center p-10 opacity-50">
-             <p className="text-xs font-black uppercase tracking-widest">Nenhuma pontuação nesta base ainda...</p>
-          </div>
-        ) : (
-          rankings.map((user, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
-              className={`flex items-center justify-between p-5 rounded-[2rem] border shadow-2xl transition-all ${
-                idx === 0 
-                  ? "bg-[var(--primary)]/10 border-[var(--primary)]/40 shadow-indigo-500/10" 
-                  : "bg-[var(--surface)] border-[var(--border)]"
-              }`}
-            >
-              <div className="flex items-center gap-4 min-w-0 flex-1">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black shadow-xl shrink-0 ${
-                  idx === 0 ? "bg-amber-500 text-white rotate-3" : 
-                  idx === 1 ? "bg-slate-300 text-slate-900 -rotate-3" : 
-                  idx === 2 ? "bg-orange-600 text-white rotate-2" : "bg-[var(--background)] text-slate-500"
-                }`}>
-                  {idx < 3 ? <Medal size={24} strokeWidth={3} /> : <span className="text-xs font-black">{idx + 1}</span>}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-black text-[var(--foreground)] italic tracking-tighter text-lg uppercase leading-none truncate">{user.nickname || "JOGADOR"}</h3>
-                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1 block tracking-[0.2em] truncate">Membro da Base</span>
-                </div>
-              </div>
+        {/* Content Section */}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-20 gap-4">
+              <Loader2 className="animate-spin text-[var(--primary)]" size={40} />
+              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sincronizando placar...</p>
+            </div>
+          ) : !activeOrg ? (
+             <div className="text-center p-12 bg-[var(--surface)] border border-[var(--border)] rounded-[2.5rem] opacity-50">
+                <p className="text-[10px] font-black uppercase tracking-widest">Selecione uma base no perfil...</p>
+             </div>
+          ) : rankings.length === 0 ? (
+            <div className="text-center p-12 bg-[var(--surface)] border border-[var(--border)] rounded-[2.5rem] opacity-50">
+               <p className="text-[10px] font-black uppercase tracking-widest">A disputa ainda não começou...</p>
+            </div>
+          ) : (
+            rankings.map((user, idx) => {
+              const isTop3 = idx < 3;
+              const isGold = idx === 0;
               
-              <div className="text-right shrink-0">
-                <span className={`block text-xl font-black italic tracking-tighter ${idx === 0 ? "text-amber-500" : "text-[var(--primary)]"}`}>
-                  {(user.points || 0).toLocaleString()}
-                </span>
-                <span className="text-[9px] text-[var(--secondary)] font-black uppercase tracking-widest flex items-center gap-0.5 justify-end">
-                  {globalSettings.currency} <ArrowUpRight size={10} strokeWidth={4} />
-                </span>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
-      
-      <div className="mt-8">
-        <div className="bg-gradient-to-tr from-[var(--primary)] to-[var(--secondary)] p-6 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-500/20 relative overflow-hidden">
-          <div className="absolute -top-4 -right-4 bg-white/10 w-24 h-24 rounded-full blur-2xl" />
-          <Trophy className="w-10 h-10 opacity-40 mb-4" />
-          <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none">DOMINE O TOPO</h4>
-          <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mt-2 max-w-[200px]">Suba no ranking da sua base e ganhe prêmios exclusivos.</p>
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`group relative p-4 rounded-[2rem] border transition-all flex items-center justify-between gap-4 ${
+                    isGold 
+                      ? "bg-gradient-to-r from-amber-500/10 to-purple-500/10 border-amber-500/20 shadow-xl shadow-amber-500/[0.03]" 
+                      : "bg-[var(--surface)] border-[var(--border)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    {/* Position Icon */}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black shadow-lg shrink-0 transition-transform group-hover:scale-105 ${
+                      isGold ? "bg-gradient-to-br from-amber-400 to-orange-600 text-white" : 
+                      idx === 1 ? "bg-slate-300 text-slate-700" : 
+                      idx === 2 ? "bg-orange-600/80 text-white" : "bg-[var(--background)] text-slate-500 border border-[var(--border)]"
+                    }`}>
+                      {isTop3 ? <Medal size={22} strokeWidth={3} /> : <span className="text-xs">{idx + 1}</span>}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-black text-[var(--foreground)] italic tracking-tighter text-lg uppercase leading-none truncate group-hover:text-[var(--primary)] transition-colors">
+                        {user.nickname}
+                      </h3>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest leading-none">Cidadão da Base</span>
+                        {isGold && <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-black">LÍDER</span>}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right shrink-0">
+                    <div className="flex flex-col items-end">
+                      <span className={`text-2xl md:text-3xl font-black italic tracking-tighter leading-none ${isGold ? "text-amber-500" : "text-[var(--primary)]"}`}>
+                        {(user.points || 0).toLocaleString()}
+                      </span>
+                      <span className="text-[9px] text-[var(--secondary)] font-black uppercase tracking-widest mt-1 flex items-center gap-1 opacity-70">
+                        {globalSettings.currency || 'PONTOS'} <ArrowUpRight size={10} strokeWidth={4} />
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
         </div>
+        
+        {/* Footer CTA */}
+        {rankings.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
+            <div className="bg-[var(--surface)] border border-[var(--border)] p-8 rounded-[3.5rem] relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent opacity-50" />
+              <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                <div className="w-16 h-16 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] rounded-3xl flex items-center justify-center text-white shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
+                  <Trophy size={32} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-2xl font-black italic uppercase tracking-tighter leading-none mb-2">Domine o Topo</h4>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 opacity-70 leading-relaxed max-w-sm">Suba no placar da sua base para desbloquear conquistas e provar sua maestria.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
