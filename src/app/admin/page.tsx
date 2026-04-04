@@ -328,6 +328,8 @@ export default function AdminDashboard() {
                 <input 
                   type="text" 
                   placeholder="Nome da Base" 
+                  title="Nome da nova Base"
+                  aria-label="Nome da nova Base"
                   value={newOrgName} 
                   onChange={e => setNewOrgName(e.target.value)} 
                   className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-black text-center"
@@ -386,6 +388,8 @@ export default function AdminDashboard() {
                         <input 
                           type="text" 
                           placeholder="Título do Quiz" 
+                          title="Título do Quiz"
+                          aria-label="Título do Quiz"
                           value={title} 
                           onChange={e => setTitle(e.target.value)}
                           className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-bold"
@@ -428,7 +432,7 @@ export default function AdminDashboard() {
                         </div>
                         {uploadMode === 'file' ? (
                           <div className="space-y-2">
-                            <input type="file" accept=".csv" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
+                            <input type="file" accept=".csv" title="Upload de arquivo CSV" aria-label="Upload de arquivo CSV" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full text-xs" />
                             <button onClick={handleDownloadTemplate} className="text-[9px] text-[var(--primary)] font-black uppercase tracking-widest hover:underline flex items-center gap-1">
                               <Download size={12} /> Baixar Modelo CSV
                             </button>
@@ -527,8 +531,8 @@ export default function AdminDashboard() {
                            ))}
                         </div>
                         <div className="flex gap-2">
-                           <button onClick={() => router.push(`/admin/${q.id}`)} className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
-                           <button onClick={() => handleDeleteQuiz(q.id)} className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
+                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" aria-label="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
+                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" aria-label="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
@@ -590,7 +594,7 @@ export default function AdminDashboard() {
                               {u.id !== currentUser?.id && (
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => handlePromoteAdmin(u.id, u.base_role)} className={`px-2 py-1.5 rounded-lg border font-black uppercase text-[7px] ${isAdmin ? 'text-red-500 border-red-500/20' : 'text-purple-500 border-purple-500/20'}`}>{isAdmin ? 'Remove Admin' : 'Make Admin'}</button>
-                                  <button onClick={() => handleRemoveMember(u.id)} className="p-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={12} /></button>
+                                  <button onClick={() => handleRemoveMember(u.id)} title="Remover Membro" aria-label="Remover Membro" className="p-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={12} /></button>
                                 </div>
                               )}
                            </div>
