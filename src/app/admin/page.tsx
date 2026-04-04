@@ -95,6 +95,25 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateQuizPoints = async (quizId: string, newPoints: number) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("quizzes")
+        .update({ points_per_question: newPoints })
+        .eq("id", quizId);
+
+      if (error) throw error;
+      
+      setStatus({ type: "success", msg: "Pontuação do quiz atualizada!" });
+      fetchQuizzes();
+    } catch (err: any) {
+      setStatus({ type: "error", msg: `Erro ao atualizar: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePromoteAdmin = async (userId: string, currentRole: string) => {
     if (!activeOrg) return;
     const action = currentRole === 'admin' ? 'remover o cargo de admin de' : 'tornar admin';
@@ -485,12 +504,12 @@ export default function AdminDashboard() {
                 {!isPreviewing && (
                   <div className="md:col-span-2 space-y-4">
                     {quizzes.map(q => (
-                      <div key={q.id} className="bg-[var(--surface)] p-4 rounded-[2rem] border border-[var(--border)] flex justify-between items-center group">
+                      <div key={q.id} className="bg-[var(--surface)] p-4 rounded-[2rem] border border-[var(--border)] flex flex-col md:flex-row gap-4 md:items-center justify-between group">
                         <div className="flex items-center gap-4">
                            <div className="bg-[var(--background)] p-3 rounded-xl"><Gamepad2 size={20} /></div>
                            <div>
-                              <h3 className="font-black italic uppercase tracking-tighter text-[var(--foreground)]">{q.title}</h3>
-                              <div className="flex items-center gap-2">
+                              <h3 className="font-black italic uppercase tracking-tighter text-[var(--foreground)] leading-none">{q.title}</h3>
+                              <div className="flex items-center gap-2 mt-1">
                                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest border border-[var(--border)] px-1 rounded">#{q.pin}</span>
                                  <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${
                                    q.quiz_type === 'event' 
@@ -502,9 +521,28 @@ export default function AdminDashboard() {
                               </div>
                            </div>
                         </div>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" className="p-2 rounded-lg bg-blue-500/10 text-blue-500"><ExternalLink size={16} /></button>
-                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" className="p-2 rounded-lg bg-red-500/10 text-red-500"><Trash2 size={16} /></button>
+
+                        {/* Quick Points Editor */}
+                        <div className="flex items-center gap-1.5 bg-[var(--background)] p-1.5 rounded-2xl border border-[var(--border)]">
+                           <span className="text-[7px] font-black uppercase text-slate-500 px-2 tracking-tighter">Pontos:</span>
+                           {[1, 10, 50, 100, 500].map(pts => (
+                             <button
+                               key={pts}
+                               onClick={() => handleUpdateQuizPoints(q.id, pts)}
+                               className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${
+                                 q.points_per_question === pts 
+                                   ? 'bg-[var(--primary)] border-[var(--primary)] text-white' 
+                                   : 'bg-[var(--surface)] border-[var(--border)] text-slate-500 hover:border-slate-400'
+                               }`}
+                             >
+                               {pts}
+                             </button>
+                           ))}
+                        </div>
+
+                        <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all justify-end">
+                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20"><ExternalLink size={16} /></button>
+                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
@@ -575,22 +613,39 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
-                       {allUsers.map(u => (
-                         <div key={u.id} className="bg-[var(--background)]/50 p-4 rounded-[2rem] border border-[var(--border)] flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center text-[var(--primary)] font-black italic">{u.nickname?.[0]}</div>
-                               <div>
-                                  <p className="font-black italic uppercase text-xs tracking-tighter">{u.nickname}</p>
-                                  <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest">{u.base_role}</p>
-                               </div>
-                            </div>
-                            {u.id !== currentUser?.id && (
-                              <button onClick={() => handlePromoteAdmin(u.id, u.base_role)} title="Promover/Rebaixar Admin" className="p-2 bg-purple-500/10 text-purple-500 rounded-lg border border-purple-500/20">
-                                <ShieldCheck size={14} />
-                              </button>
-                            )}
-                         </div>
-                       ))}
+                       {allUsers.map(u => {
+                         const isAdmin = u.base_role === 'admin';
+                         return (
+                           <div key={u.id} className={`p-5 rounded-[2.5rem] border transition-all flex items-center justify-between ${isAdmin ? 'bg-purple-500/[0.03] border-purple-500/20 shadow-lg shadow-purple-500/5' : 'bg-[var(--background)]/50 border-[var(--border)]'}`}>
+                              <div className="flex items-center gap-4">
+                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black italic text-xl ${isAdmin ? 'bg-gradient-to-tr from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/20' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+                                   {u.nickname?.[0]}
+                                 </div>
+                                 <div className="space-y-1">
+                                    <p className="font-black italic uppercase text-sm tracking-tighter leading-none">{u.nickname}</p>
+                                    <div className="flex items-center gap-2">
+                                       <span className={`text-[7px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border ${isAdmin ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
+                                         {isAdmin ? 'ADMINISTRADOR' : 'MEMBRO'}
+                                       </span>
+                                       {isAdmin && <ShieldCheck size={10} className="text-amber-500" />}
+                                    </div>
+                                 </div>
+                              </div>
+                              {u.id !== currentUser?.id && (
+                                <button 
+                                  onClick={() => handlePromoteAdmin(u.id, u.base_role)} 
+                                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-black uppercase text-[8px] tracking-widest transition-all ${
+                                    isAdmin 
+                                      ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white' 
+                                      : 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500 hover:text-white'
+                                  }`}
+                                >
+                                  {isAdmin ? 'REMOVER ADMIN' : 'TORNAR ADMIN'}
+                                </button>
+                              )}
+                           </div>
+                         );
+                       })}
                     </div>
                   </div>
                </motion.div>
@@ -615,16 +670,16 @@ export default function AdminDashboard() {
                  <div className="bg-[var(--surface)] p-8 rounded-[2.5rem] border border-[var(--border)]">
                     <h2 className="font-black italic uppercase mb-4">Pontuação por Acerto</h2>
                     <div className="grid grid-cols-3 gap-2">
-                        {[50, 100, 200, 500].map(v => (
-                          <button 
-                             key={v}
-                             onClick={() => updateGlobalSetting("points_per_question", v.toString())}
-                             className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 ${globalSettings.points_per_question === v ? 'border-emerald-500' : 'border-transparent'}`}
-                          >
-                             {v}
-                          </button>
-                        ))}
-                    </div>
+                         {[1, 10, 50, 100, 200, 500].map(v => (
+                           <button 
+                              key={v}
+                              onClick={() => updateGlobalSetting("points_per_question", v.toString())}
+                              className={`p-4 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${globalSettings.points_per_question === v ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500' : 'border-transparent bg-[var(--background)] hover:border-slate-500'}`}
+                           >
+                              {v}
+                           </button>
+                         ))}
+                     </div>
                  </div>
               </motion.div>
             )}
