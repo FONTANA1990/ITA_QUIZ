@@ -115,8 +115,8 @@ export default function GameHistory() {
               </div>
               
               <div className="text-right">
-                <span className={`block font-black text-xs uppercase italic tracking-tighter ${item.isWinner ? "text-[var(--correct)]" : "text-[var(--incorrect)] opacity-70"}`}>
-                  {item.isWinner ? "Finalizado" : "Incompleto"}
+                <span className={`block font-black text-xs uppercase italic tracking-tighter ${item.isWinner ? "text-[var(--correct)]" : "text-[var(--foreground)] opacity-70"}`}>
+                  Finalizado
                 </span>
                 <span className="text-[11px] text-[var(--primary)] font-black tracking-widest leading-none mt-2 inline-block bg-[var(--primary)]/10 px-3 py-1.5 rounded-full border border-[var(--primary)]/10">
                   {item.points} {globalSettings.currency}
