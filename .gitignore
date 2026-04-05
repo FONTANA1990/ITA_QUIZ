@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Diagnostic scripts & reports
+check_*.js
+inspect_*.js
+gerar_*.js
+*.csv
