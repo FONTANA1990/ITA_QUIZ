@@ -8,7 +8,8 @@ import {
   Upload, CheckCircle2, AlertCircle, Settings, Plus, 
   FileText, Download, Loader2, Trash2, RotateCcw, 
   ExternalLink, Clock, Gamepad2, Users, ShieldCheck,
-  Building2, Mail, UserPlus, LogOut, ChevronDown, Trash
+  Building2, Mail, UserPlus, LogOut, ChevronDown, Trash,
+  CheckSquare
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
@@ -340,6 +341,45 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleFinishQuiz = async (id: string, title: string) => {
+    if (!window.confirm(`Você tem certeza que deseja FINALIZAR o quiz "${title}"?\nEle sumirá da tela inicial e nenhum jogador poderá entrar.`)) return;
+    try {
+      const { error } = await supabase.from("quizzes").update({ status: 'finished' }).eq("id", id);
+      if (error) throw error;
+      fetchQuizzes();
+      alert("Quiz finalizado com sucesso!");
+    } catch (err: any) {
+      alert("Erro ao finalizar: " + err.message);
+    }
+  };
+
+  const handleResetQuiz = async (id: string, title: string) => {
+    if (!window.confirm(`🔴 ATENÇÃO: Deseja REINICIAR "${title}"?\nIsso APAGARÁ as respostas antigas, zerar a pontuação de quem participou neste quiz e voltar ao modo de início. Irreversível!`)) return;
+    try {
+      // 1. Apaga do Admin Reports
+      await supabase.from("quiz_reports").delete().eq("quiz_id", id);
+      
+      // 2. Chama RPC ou Força reinicialização via banco se tiver
+      const { error } = await supabase.rpc("reset_quiz_data", { q_id: id });
+      if (error) {
+        // Se a RPC não existir ainda e der erro, avisa amigavelmente
+        if (error.message.includes('function reset_quiz_data does not exist')) {
+            alert("Aviso: Função de reset no Banco não foi instalada no painel SQL do Supabase. O quiz voltará ao modo espera, mas os pontos antigos dos jogadores precisarão ser apagados pela RPC.");
+        } else {
+            throw error;
+        }
+      }
+
+      // Reinicia status da partida para a tela inicial 
+      await supabase.from("quizzes").update({ status: 'waiting', current_question_index: 0 }).eq("id", id);
+
+      fetchQuizzes();
+      alert("Comando de Reiniciar executado!");
+    } catch (err: any) {
+      alert("Erro ao reiniciar: " + err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -604,6 +644,8 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex gap-2">
                            <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
+                           <button onClick={() => handleFinishQuiz(q.id, q.title)} title="Finalizar" aria-label="Finalizar" className="p-2.5 rounded-xl bg-slate-500/10 text-slate-500 border border-slate-500/20 hover:bg-slate-500 hover:text-white transition-all"><CheckSquare size={16} /></button>
+                           <button onClick={() => handleResetQuiz(q.id, q.title)} title="Reiniciar" aria-label="Reiniciar" className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition-all"><RotateCcw size={16} /></button>
                            <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" aria-label="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
                            <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" aria-label="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                         </div>
