@@ -269,6 +269,77 @@ export default function AdminDashboard() {
      }
   };
 
+  const handleDownloadAnswersReport = async (quizId: string, quizTitle: string) => {
+    setLoading(true);
+    try {
+      const { data: questionsData, error: qError } = await supabase
+        .from("questions")
+        .select("id, question_text, correct_option")
+        .eq("quiz_id", quizId);
+      
+      if (qError) throw qError;
+      if (!questionsData || questionsData.length === 0) {
+        setStatus({ type: "error", msg: "Nenhuma pergunta encontrada." });
+        return;
+      }
+
+      const questionIds = questionsData.map(q => q.id);
+
+      const { data: answersData, error: aError } = await supabase
+        .from("answers")
+        .select("selected_option, is_correct, question_id, user_id, users(nickname)")
+        .in("question_id", questionIds);
+
+      if (aError) throw aError;
+      if (!answersData || answersData.length === 0) {
+        setStatus({ type: "error", msg: "Nenhuma resposta registrada ainda." });
+        return;
+      }
+
+      // Pre-calculate user stats
+      const userStats: Record<string, { total: number, correct: number, wrong: number }> = {};
+      answersData.forEach((ans: any) => {
+        const uId = ans.user_id;
+        if (!userStats[uId]) {
+           userStats[uId] = { total: 0, correct: 0, wrong: 0 };
+        }
+        userStats[uId].total += 1;
+        if (ans.is_correct) {
+           userStats[uId].correct += 1;
+        } else {
+           userStats[uId].wrong += 1;
+        }
+      });
+
+      const headers = ["Nome do Usuário", "Pergunta", "O que o usuário marcou", "Resposta Correta", "Qtd. Acertos", "Qtd. Erros", "Total Respondido"];
+      const rows = answersData.map((ans: any) => {
+        const question = questionsData.find(q => q.id === ans.question_id);
+        const userName = ans.users?.nickname || "Anônimo";
+        const questionText = (question?.question_text || "").replace(/"/g, '""');
+        const stats = userStats[ans.user_id] || { total: 0, correct: 0, wrong: 0 };
+        
+        return `"${userName}","${questionText}","${ans.selected_option}","${question?.correct_option}","${stats.correct}","${stats.wrong}","${stats.total}"`;
+      });
+
+      const csvContent = '\ufeff' + [headers.map(h => `"${h}"`).join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `relatorio_respostas_${quizTitle.replace(/\s+/g, '_')}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setStatus({ type: "success", msg: "Relatório gerado com sucesso!" });
+    } catch (err: any) {
+      setStatus({ type: "error", msg: `Erro ao gerar relatório: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)] p-4 md:p-8 transition-colors duration-300">
       <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -532,6 +603,7 @@ export default function AdminDashboard() {
                            ))}
                         </div>
                         <div className="flex gap-2">
+                           <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
                            <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" aria-label="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
                            <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" aria-label="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
                         </div>
