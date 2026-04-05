@@ -66,10 +66,17 @@ export default function AdminDashboard() {
     if (!activeOrg) return;
     const { data } = await supabase
       .from("quizzes")
-      .select("*")
+      .select("*, scores(user_id)")
       .eq("organization_id", activeOrg.id)
       .order("created_at", { ascending: false });
-    setQuizzes(data || []);
+    
+    // Normalizar o count para não quebrar a tipagem, mesmo que scores venha nulo
+    const processedData = data?.map(q => ({
+      ...q,
+      scores_count: q.scores ? (Array.isArray(q.scores) ? q.scores.length : 0) : 0
+    }));
+
+    setQuizzes(processedData || []);
   };
 
   const fetchUsers = async () => {
@@ -622,11 +629,24 @@ export default function AdminDashboard() {
                            <div className="bg-[var(--background)] p-3 rounded-xl"><Gamepad2 size={20} /></div>
                            <div>
                               <h3 className="font-black italic uppercase tracking-tighter text-[var(--foreground)] leading-none">{q.title}</h3>
-                              <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
                                  <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest border border-[var(--border)] px-1 rounded">#{q.pin}</span>
                                  <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border ${q.quiz_type === 'event' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'}`}>
                                    {q.quiz_type === 'event' ? 'Evento' : 'Kahoot'}
                                  </span>
+                                 {q.status === 'finished' ? (
+                                   <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-slate-500/10 text-slate-500 border-slate-500/20">
+                                     Finalizado
+                                   </span>
+                                 ) : q.scores_count && q.scores_count > 0 ? (
+                                   <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                     {q.scores_count} {q.scores_count === 1 ? 'Usuário' : 'Usuários'}
+                                   </span>
+                                 ) : (
+                                   <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-red-500/10 text-red-500 border-red-500/20">
+                                     Zerado
+                                   </span>
+                                 )}
                               </div>
                            </div>
                         </div>
