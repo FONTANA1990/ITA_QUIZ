@@ -737,8 +737,8 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                           {q.status === 'waiting' && (
-                             <button onClick={() => handleStartQuiz(q.id, q.title)} title="Iniciar Partida" aria-label="Iniciar" className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/5 animate-pulse"><Play size={16} fill="currentColor" /></button>
+                           {q.status !== 'finished' && (
+                             <button onClick={() => handleStartQuiz(q.id, q.title)} title="Iniciar Partida" aria-label="Iniciar" className={`p-2.5 rounded-xl border transition-all shadow-lg ${q.status === 'playing' ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500 hover:text-white animate-pulse'}`}><Play size={16} fill="currentColor" /></button>
                            )}
                            <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
                            <button onClick={() => handleFinishQuiz(q.id, q.title)} title="Finalizar" aria-label="Finalizar" className="p-2.5 rounded-xl bg-slate-500/10 text-slate-500 border border-slate-500/20 hover:bg-slate-500 hover:text-white transition-all"><CheckSquare size={16} /></button>
