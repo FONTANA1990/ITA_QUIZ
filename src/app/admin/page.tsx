@@ -736,15 +736,33 @@ export default function AdminDashboard() {
                              ))}
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                            {q.status !== 'finished' && (
-                             <button onClick={() => handleStartQuiz(q.id, q.title)} title="Iniciar Partida" aria-label="Iniciar" className={`p-2.5 rounded-xl border transition-all shadow-lg ${q.status === 'playing' ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500 hover:text-white animate-pulse'}`}><Play size={16} fill="currentColor" /></button>
+                             <button onClick={() => handleStartQuiz(q.id, q.title)} title="Iniciar Partida" className={`p-2 px-3 rounded-xl border transition-all shadow-lg flex items-center gap-2 ${q.status === 'playing' ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500 hover:text-white animate-pulse'}`}>
+                               <Play size={14} fill="currentColor" />
+                               <span className="text-[10px] font-bold uppercase tracking-wider">Play</span>
+                             </button>
                            )}
-                           <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
-                           <button onClick={() => handleFinishQuiz(q.id, q.title)} title="Finalizar" aria-label="Finalizar" className="p-2.5 rounded-xl bg-slate-500/10 text-slate-500 border border-slate-500/20 hover:bg-slate-500 hover:text-white transition-all"><CheckSquare size={16} /></button>
-                           <button onClick={() => handleResetQuiz(q.id, q.title)} title="Reiniciar" aria-label="Reiniciar" className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition-all"><RotateCcw size={16} /></button>
-                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar Quiz" aria-label="Gerenciar Quiz" className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all"><ExternalLink size={16} /></button>
-                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir Quiz" aria-label="Excluir Quiz" className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={16} /></button>
+                           <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório" className="p-2 px-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2">
+                             <Download size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider">Dados</span>
+                           </button>
+                           <button onClick={() => handleFinishQuiz(q.id, q.title)} title="Finalizar" className="p-2 px-3 rounded-xl bg-slate-500/10 text-slate-500 border border-slate-500/20 hover:bg-slate-500 hover:text-white transition-all flex items-center gap-2">
+                             <CheckSquare size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider">Fim</span>
+                           </button>
+                           <button onClick={() => handleResetQuiz(q.id, q.title)} title="Reiniciar" className="p-2 px-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2">
+                             <RotateCcw size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider">Reset</span>
+                           </button>
+                           <button onClick={() => router.push(`/admin/${q.id}`)} title="Gerenciar" className="p-2 px-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2">
+                             <ExternalLink size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider">Sala</span>
+                           </button>
+                           <button onClick={() => handleDeleteQuiz(q.id)} title="Excluir" className="p-2 px-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2">
+                             <Trash2 size={14} />
+                             <span className="text-[10px] font-bold uppercase tracking-wider">Lixo</span>
+                           </button>
                         </div>
                       </div>
                     ))}
