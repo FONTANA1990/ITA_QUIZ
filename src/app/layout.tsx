@@ -4,6 +4,7 @@ import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import PageLayoutWrapper from "@/components/PageLayoutWrapper";
 import { UserProvider } from "@/context/UserContext";
+import InviteNotification from "@/components/InviteNotification";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -34,6 +35,7 @@ export default function RootLayout({
           <PageLayoutWrapper>
             {children}
           </PageLayoutWrapper>
+          <InviteNotification />
           <BottomNav />
         </UserProvider>
       </body>

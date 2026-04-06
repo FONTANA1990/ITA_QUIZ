@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const avatars = [
   "🎮", "🛡️", "🔥", "💎", "🌟", "🦁", "🕊️", "⚓", "👑", "📜",
@@ -24,6 +25,14 @@ export default function Profile() {
   } = useUser();
   const [activeTab, setActiveTab] = useState<"menu" | "settings" | "avatars" | "privacy" | "help" | "adminAuth" | "invites" | "orgs">("menu");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["menu", "settings", "avatars", "privacy", "help", "adminAuth", "invites", "orgs"].includes(tab)) {
+       setActiveTab(tab as any);
+    }
+  }, [searchParams]);
   
   // States do Login
   const [email, setEmail] = useState("");
