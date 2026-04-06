@@ -112,6 +112,25 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateQuizTimer = async (quizId: string, seconds: number | null) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("quizzes")
+        .update({ timer_per_question: seconds })
+        .eq("id", quizId);
+
+      if (error) throw error;
+      
+      setStatus({ type: "success", msg: "Tempo do quiz atualizado!" });
+      fetchQuizzes();
+    } catch (err: any) {
+      setStatus({ type: "error", msg: `Erro ao atualizar tempo: ${err.message}` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePromoteAdmin = async (userId: string, currentRole: string) => {
     if (!activeOrg) return;
     const action = currentRole === 'admin' ? 'remover o cargo de admin de' : 'tornar admin';
@@ -538,6 +557,20 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                         </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest pl-1">Tempo por Pergunta</label>
+                          <div className="flex flex-wrap gap-2">
+                            {[0, 10, 20, 30, 60].map(sec => (
+                              <button
+                                key={sec}
+                                onClick={() => setTimer(sec === 0 ? null : sec)}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-black border-2 transition-all ${((timer === null || timer === 0) && sec === 0) || timer === sec ? 'border-amber-500 bg-amber-500/10 text-amber-500' : 'border-[var(--border)] text-slate-500 hover:border-slate-700'}`}
+                              >
+                                {sec === 0 ? 'OFF' : `${sec}s`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <div className="p-1 bg-[var(--background)] rounded-xl border border-[var(--border)] flex">
                           {["file", "text", "manual"].map(m => (
                             <button 
@@ -650,17 +683,31 @@ export default function AdminDashboard() {
                               </div>
                            </div>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-[var(--background)] p-1.5 rounded-2xl border border-[var(--border)]">
-                           <span className="text-[7px] font-black uppercase text-slate-500 px-2 tracking-tighter">Pontos:</span>
-                           {[1, 10, 50, 100, 500].map(pts => (
-                             <button
-                               key={pts}
-                               onClick={() => handleUpdateQuizPoints(q.id, pts)}
-                               className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${q.points_per_question === pts ? 'bg-[var(--primary)] border-[var(--primary)] text-white' : 'bg-[var(--surface)] border-[var(--border)] text-slate-500'}`}
-                             >
-                               {pts}
-                             </button>
-                           ))}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-1.5 bg-[var(--background)] p-1.5 rounded-2xl border border-[var(--border)]">
+                             <span className="text-[7px] font-black uppercase text-slate-500 px-2 tracking-tighter">Pontos:</span>
+                             {[1, 10, 50, 100, 500].map(pts => (
+                               <button
+                                 key={pts}
+                                 onClick={() => handleUpdateQuizPoints(q.id, pts)}
+                                 className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${q.points_per_question === pts ? 'bg-[var(--primary)] border-[var(--primary)] text-white' : 'bg-[var(--surface)] border-[var(--border)] text-slate-500'}`}
+                               >
+                                 {pts}
+                               </button>
+                             ))}
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-[var(--background)] p-1.5 rounded-2xl border border-[var(--border)]">
+                             <span className="text-[7px] font-black uppercase text-slate-500 px-2 tracking-tighter flex items-center gap-1"><Clock size={10} /> Tempo:</span>
+                             {[0, 10, 20, 30, 60].map(sec => (
+                               <button
+                                 key={sec}
+                                 onClick={() => handleUpdateQuizTimer(q.id, sec === 0 ? null : sec)}
+                                 className={`px-2 py-1 rounded-lg text-[8px] font-black border transition-all ${((q.timer_per_question === null || q.timer_per_question === 0) && sec === 0) || q.timer_per_question === sec ? 'bg-amber-500 border-amber-500 text-white' : 'bg-[var(--surface)] border-[var(--border)] text-slate-500'}`}
+                               >
+                                 {sec === 0 ? 'OFF' : `${sec}s`}
+                               </button>
+                             ))}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                            <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
