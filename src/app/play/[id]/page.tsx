@@ -29,6 +29,16 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
     }
     
     fetchInitialData();
+
+    // Sincronização automática quando o usuário volta para a aba (ex: após ligação)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchInitialData();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
     const channel = supabase
       .channel(`player-quiz-${quizId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quizzes", filter: `id=eq.${quizId}` }, (payload) => {
@@ -40,13 +50,19 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
           }
           return { ...prev, ...newQuiz };
         });
+        
+        // Se mudou de questão ou status, forçar uma re-checagem dos dados
+        if (newQuiz.current_question_index !== quiz?.current_question_index || newQuiz.status !== quiz?.status) {
+           fetchInitialData();
+        }
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [quizId, contextUser]);
+  }, [quizId, contextUser, quiz?.current_question_index, quiz?.status]);
 
   // Gerencia o início do tempo local para eventos
   useEffect(() => {
@@ -121,7 +137,11 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
   };
 
   const fetchInitialData = async () => {
+    if (!contextUser) return;
+
     const { data: quizData } = await supabase.from("quizzes").select("*").eq("id", quizId).single();
+    if (!quizData) return;
+    
     setQuiz(quizData);
 
     const { data: questionsData } = await supabase
@@ -129,18 +149,42 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
       .select("*")
       .eq("quiz_id", quizId)
       .order("order_index", { ascending: true });
-    setQuestions(questionsData || []);
+    
+    const allQuestions = questionsData || [];
+    setQuestions(allQuestions);
 
-    if (quizData?.quiz_type === 'event' && contextUser) {
+    // Recuperar progresso de Evento
+    if (quizData.quiz_type === 'event') {
       const { count } = await supabase
         .from("answers")
         .select("*", { count: 'exact', head: true })
         .eq("user_id", contextUser.id)
-        .in("question_id", (questionsData || []).map(q => q.id));
+        .in("question_id", allQuestions.map(q => q.id));
       
       setUserAnswersCount(count || 0);
-      if (count !== null && questionsData && count >= questionsData.length) {
+      if (count !== null && allQuestions.length > 0 && count >= allQuestions.length) {
         setIsEventFinished(true);
+      }
+    } else {
+      // Para quiz Normal: Verificar se a questão atual já foi respondida
+      const currentQuestion = allQuestions[quizData.current_question_index];
+      if (currentQuestion) {
+        const { data: existingAnswer } = await supabase
+          .from("answers")
+          .select("*")
+          .eq("user_id", contextUser.id)
+          .eq("question_id", currentQuestion.id)
+          .single();
+        
+        if (existingAnswer) {
+          setAnswered(true);
+          setLastAnswerCorrect(existingAnswer.is_correct);
+        } else {
+          // Só resetar se realmente não existir resposta no banco
+          // Isso evita "piscar" a tela de resposta se o Realtime for rápido
+          setAnswered(false);
+          setLastAnswerCorrect(null);
+        }
       }
     }
     
