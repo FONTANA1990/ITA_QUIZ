@@ -287,8 +287,8 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
                  <div className="absolute inset-0 bg-[var(--primary)]/20 blur-2xl animate-pulse rounded-full" />
                  <Gamepad2 className="w-16 h-16 text-[var(--primary)] relative z-10" />
               </div>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-glow-blue">Aguardando Host...</h2>
-              <p className="mt-4 text-slate-500 font-bold uppercase text-xs tracking-widest animate-pulse">A partida começará em breve!</p>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter text-glow-blue">Esse quiz ainda não começou...</h2>
+              <p className="mt-4 text-slate-500 font-bold uppercase text-xs tracking-widest animate-pulse">Aguarde o Start do Administrador!</p>
             </motion.div>
           )}
 

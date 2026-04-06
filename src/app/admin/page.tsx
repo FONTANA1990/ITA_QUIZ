@@ -9,7 +9,7 @@ import {
   FileText, Download, Loader2, Trash2, RotateCcw, 
   ExternalLink, Clock, Gamepad2, Users, ShieldCheck,
   Building2, Mail, UserPlus, LogOut, ChevronDown, Trash,
-  CheckSquare
+  CheckSquare, Play
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
@@ -203,9 +203,9 @@ export default function AdminDashboard() {
         .from("quizzes")
         .insert([{ 
           title: title.trim(), 
-          status: quizType === "event" ? "playing" : "waiting", 
+          status: "waiting", // Inicia sempre aguardando
           quiz_type: quizType,
-          is_active: quizType === "event",
+          is_active: false, // Inativo até o ADM dar Play
           timer_per_question: timer,
           points_per_question: pointsPerQuestion,
           organization_id: activeOrg.id
@@ -367,10 +367,28 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleStartQuiz = async (id: string, title: string) => {
+    try {
+      const { error } = await supabase.from("quizzes").update({ 
+        status: 'playing',
+        is_active: true,
+        question_started_at: new Date().toISOString()
+      }).eq("id", id);
+      if (error) throw error;
+      fetchQuizzes();
+      alert(`Quiz "${title}" iniciado com sucesso!`);
+    } catch (err: any) {
+      alert("Erro ao iniciar: " + err.message);
+    }
+  };
+
   const handleFinishQuiz = async (id: string, title: string) => {
     if (!window.confirm(`Você tem certeza que deseja FINALIZAR o quiz "${title}"?\nEle sumirá da tela inicial e nenhum jogador poderá entrar.`)) return;
     try {
-      const { error } = await supabase.from("quizzes").update({ status: 'finished' }).eq("id", id);
+      const { error } = await supabase.from("quizzes").update({ 
+        status: 'finished',
+        is_active: false 
+      }).eq("id", id);
       if (error) throw error;
       fetchQuizzes();
       alert("Quiz finalizado com sucesso!");
@@ -382,25 +400,34 @@ export default function AdminDashboard() {
   const handleResetQuiz = async (id: string, title: string) => {
     if (!window.confirm(`🔴 ATENÇÃO: Deseja REINICIAR "${title}"?\nIsso APAGARÁ as respostas antigas, zerar a pontuação de quem participou neste quiz e voltar ao modo de início. Irreversível!`)) return;
     try {
-      // 1. Apaga do Admin Reports
+      // 1. Encontrar o quiz para saber o tipo
+      const quiz = quizzes.find(q => q.id === id);
+      const isEvent = quiz?.quiz_type === 'event';
+
+      // 2. Apaga do Admin Reports
       await supabase.from("quiz_reports").delete().eq("quiz_id", id);
       
-      // 2. Chama RPC ou Força reinicialização via banco se tiver
-      const { error } = await supabase.rpc("reset_quiz_data", { q_id: id });
-      if (error) {
-        // Se a RPC não existir ainda e der erro, avisa amigavelmente
-        if (error.message.includes('function reset_quiz_data does not exist')) {
-            alert("Aviso: Função de reset no Banco não foi instalada no painel SQL do Supabase. O quiz voltará ao modo espera, mas os pontos antigos dos jogadores precisarão ser apagados pela RPC.");
+      // 3. Chama RPC para limpar respostas e scores
+      const { error: rpcError } = await supabase.rpc("reset_quiz_data", { q_id: id });
+      if (rpcError) {
+        if (rpcError.message.includes('function reset_quiz_data does not exist')) {
+            console.warn("RPC reset_quiz_data não encontrada. Verifique o SQL Editor no Supabase.");
         } else {
-            throw error;
+            throw rpcError;
         }
       }
 
-      // Reinicia status da partida para a tela inicial 
-      await supabase.from("quizzes").update({ status: 'waiting', current_question_index: 0 }).eq("id", id);
+      // 4. Reinicia status - Se for evento, volta para 'playing' imediatamente
+      const { error: updateError } = await supabase.from("quizzes").update({ 
+        status: isEvent ? 'playing' : 'waiting', 
+        current_question_index: 0,
+        is_active: isEvent // Eventos ficam ativos logo após o reset
+      }).eq("id", id);
+
+      if (updateError) throw updateError;
 
       fetchQuizzes();
-      alert("Comando de Reiniciar executado!");
+      alert("Quiz reiniciado com sucesso!");
     } catch (err: any) {
       alert("Erro ao reiniciar: " + err.message);
     }
@@ -710,6 +737,9 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex gap-2">
+                           {q.status === 'waiting' && (
+                             <button onClick={() => handleStartQuiz(q.id, q.title)} title="Iniciar Partida" aria-label="Iniciar" className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/5 animate-pulse"><Play size={16} fill="currentColor" /></button>
+                           )}
                            <button onClick={() => handleDownloadAnswersReport(q.id, q.title)} title="Baixar Relatório de Respostas" aria-label="Baixar Relatório de Respostas" className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all"><Download size={16} /></button>
                            <button onClick={() => handleFinishQuiz(q.id, q.title)} title="Finalizar" aria-label="Finalizar" className="p-2.5 rounded-xl bg-slate-500/10 text-slate-500 border border-slate-500/20 hover:bg-slate-500 hover:text-white transition-all"><CheckSquare size={16} /></button>
                            <button onClick={() => handleResetQuiz(q.id, q.title)} title="Reiniciar" aria-label="Reiniciar" className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition-all"><RotateCcw size={16} /></button>

@@ -103,6 +103,7 @@ export default function AdminRoom({ params }: { params: Promise<{ id: string }> 
     await supabase.from("quizzes").update({ 
       status: "playing", 
       current_question_index: 0,
+      is_active: true, // Garante que o quiz fique visível
       question_started_at: new Date().toISOString()
     }).eq("id", quizId);
     setActionLoading(false);
