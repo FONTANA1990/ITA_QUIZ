@@ -166,13 +166,26 @@ CREATE POLICY "Public Profiles Access" ON public.users FOR SELECT USING (true);
 
 -- Admin & Super-Admin (Acesso Total)
 DROP POLICY IF EXISTS "Admin Full Access" ON public.quizzes;
-CREATE POLICY "Admin Full Access" ON public.quizzes FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND (role = 'admin' OR email = 'mediattamoveis@gmail.com'))
+DROP POLICY IF EXISTS "Acesso administrativo aos quizzes" ON public.quizzes;
+CREATE POLICY "Acesso administrativo aos quizzes" ON public.quizzes
+FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND (role = 'admin' OR email = 'mediattamoveis@gmail.com')) OR
+    public.check_is_org_admin(organization_id)
 );
 
--- Jogadores: Podem ver quizzes e responder
+-- Jogadores: Podem ver quizzes ativos
 DROP POLICY IF EXISTS "Player View Quizzes" ON public.quizzes;
-CREATE POLICY "Player View Quizzes" ON public.quizzes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Visualização de quizzes permitida" ON public.quizzes;
+CREATE POLICY "Visualização de quizzes permitida" ON public.quizzes
+FOR SELECT USING (
+    status = 'playing' OR 
+    status = 'waiting' OR
+    public.check_is_org_admin(organization_id) OR
+    EXISTS (
+        SELECT 1 FROM public.organization_members 
+        WHERE organization_id = quizzes.organization_id AND user_id = auth.uid()
+    )
+);
 
 DROP POLICY IF EXISTS "Player Insert Own Answers" ON public.answers;
 CREATE POLICY "Player Insert Own Answers" ON public.answers FOR INSERT WITH CHECK (auth.uid() = user_id);

@@ -60,15 +60,15 @@ CREATE POLICY "Owners podem tudo na organização" ON public.organizations
 FOR ALL USING (owner_id = auth.uid());
 
 -- 4.2 Organization Members: SELECT permitido para o próprio ou para o OWNER da org
-CREATE POLICY "Membros podem ver suas próprias associações" ON public.organization_members
+CREATE POLICY "Membros podem ver associações permitidas" ON public.organization_members
 FOR SELECT USING (
     user_id = auth.uid() OR 
-    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+    public.check_is_org_admin(organization_id)
 );
 
-CREATE POLICY "Admins podem gerenciar membros da mesma org" ON public.organization_members
+CREATE POLICY "Admins podem gerenciar membros" ON public.organization_members
 FOR ALL USING (
-    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+    public.check_is_org_admin(organization_id)
 );
 
 -- 4.3 Settings & Invites
@@ -77,23 +77,35 @@ FOR SELECT USING (
     organization_id IN (SELECT organization_id FROM public.organization_members WHERE user_id = auth.uid())
 );
 
-CREATE POLICY "Owners podem gerenciar settings" ON public.settings
+CREATE POLICY "Admins podem gerenciar settings" ON public.settings
 FOR ALL USING (
-    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+    public.check_is_org_admin(organization_id)
 );
 
-CREATE POLICY "Pessoas podem ver seus próprios convites" ON public.invites
+CREATE POLICY "Leitura de convites para interessados" ON public.invites
 FOR SELECT USING (
     invited_email = (SELECT email FROM public.users WHERE id = auth.uid()) OR
-    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+    public.check_is_org_admin(organization_id)
 );
 
-CREATE POLICY "Owners podem gerenciar convites" ON public.invites
+CREATE POLICY "Admins podem gerenciar convites" ON public.invites
 FOR ALL USING (
-    organization_id IN (SELECT id FROM public.organizations WHERE owner_id = auth.uid())
+    public.check_is_org_admin(organization_id)
 );
 
--- 5. RPC para criação atômica
+-- 5. Funções Auxiliares
+CREATE OR REPLACE FUNCTION public.check_is_org_admin(p_org_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.organizations WHERE id = p_org_id AND owner_id = auth.uid()
+        UNION
+        SELECT 1 FROM public.organization_members WHERE organization_id = p_org_id AND user_id = auth.uid() AND role = 'admin'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. RPC para criação atômica
 CREATE OR REPLACE FUNCTION public.create_organization(p_name TEXT, p_owner_id UUID)
 RETURNS UUID AS $$
 DECLARE
