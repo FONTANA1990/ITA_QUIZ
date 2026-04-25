@@ -500,7 +500,18 @@ export default function AdminDashboard() {
                   className="w-full bg-[var(--background)] border border-[var(--border)] p-4 rounded-2xl font-black text-center"
                 />
                 <button 
-                  onClick={() => createOrganization(newOrgName)} 
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      await createOrganization(newOrgName);
+                      setNewOrgName("");
+                      setStatus({ type: "success", msg: "Base criada com sucesso!" });
+                    } catch (err: any) {
+                      setStatus({ type: "error", msg: `Erro ao criar base: ${err.message}` });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }} 
                   disabled={!newOrgName || loading}
                   className="w-full bg-[var(--primary)] text-white p-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
@@ -513,6 +524,9 @@ export default function AdminDashboard() {
                     "CRIAR BASE"
                   )}
                 </button>
+                {status?.type === "error" && status.msg.includes("base") && (
+                   <p className="text-[10px] text-red-500 font-bold uppercase text-center mt-2">{status.msg}</p>
+                )}
               </div>
            </motion.div>
         ) : (

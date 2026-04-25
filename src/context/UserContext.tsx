@@ -141,8 +141,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (found) {
           setActiveOrg(found);
           localStorage.setItem("ita_quiz_active_org", found.id);
-        } else {
-          setActiveOrg(null);
+        } else if (!preferredOrgId) {
+          // Só volta para a primeira org se não estivermos tentando selecionar uma específica
+          const fallback = orgs[0] || null;
+          setActiveOrg(fallback);
+          if (fallback) localStorage.setItem("ita_quiz_active_org", fallback.id);
         }
       }
     } catch (err) {
