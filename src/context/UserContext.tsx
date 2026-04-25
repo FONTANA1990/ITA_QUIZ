@@ -66,6 +66,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [activeOrg, setActiveOrg] = useState<Organization | null>(null);
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: "dark",
     avatar: "🎮",
@@ -245,39 +246,39 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createOrganization = async (name: string) => {
-    if (!user || loading) return;
+    if (!user) throw new Error("Usuário não autenticado.");
+    if (isCreatingOrg) throw new Error("Criação já em andamento.");
     
-    setLoading(true);
+    setIsCreatingOrg(true);
     try {
       const { data: orgId, error } = await supabase.rpc("create_organization", {
         p_name: name,
         p_owner_id: user.id
       });
 
-      console.log("RPC Result:", { orgId, error });
+      console.log("[createOrganization] RPC Result:", { orgId, error });
 
       if (error) {
-        console.error("Erro ao criar organização via RPC:", error);
-        throw new Error(`DB Error: ${error.message} (${error.code})`);
+        console.error("[createOrganization] Erro RPC:", error);
+        throw new Error(`Erro no banco: ${error.message} (código: ${error.code})`);
       }
 
       if (!orgId) {
-        throw new Error("O banco de dados não retornou um ID para a nova base. Verifique as permissões.");
+        throw new Error("O banco não retornou um ID para a nova base. Verifique as permissões de RLS.");
       }
 
-      console.log("Organização criada com ID:", orgId);
+      console.log("[createOrganization] Organização criada com ID:", orgId);
       
-      // Força a atualização da lista e seleciona a nova org
+      // Salva preferência antes de recarregar
+      localStorage.setItem("ita_quiz_active_org", orgId);
+
+      // Recarrega as organizações e seleciona a nova
       await fetchUserOrganizations(user.id, orgId);
-      
-      if (orgId) {
-        localStorage.setItem("ita_quiz_active_org", orgId);
-      }
     } catch (err: any) {
-      console.error("Falha ao criar organização:", err);
+      console.error("[createOrganization] Falha:", err);
       throw err;
     } finally {
-      setLoading(false);
+      setIsCreatingOrg(false);
     }
   };
 
