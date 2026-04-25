@@ -252,8 +252,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setIsCreatingOrg(true);
     try {
       const { data: orgId, error } = await supabase.rpc("create_organization", {
-        p_name: name,
-        p_owner_id: user.id
+        p_name: name
       });
 
       console.log("[createOrganization] RPC Result:", { orgId, error });

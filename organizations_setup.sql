@@ -74,6 +74,9 @@ FOR ALL USING (
     EXISTS (SELECT 1 FROM public.organizations WHERE id = organization_id AND owner_id = auth.uid())
 );
 
+CREATE POLICY "Permitir criação inicial de membros" ON public.organization_members
+FOR INSERT WITH CHECK (user_id = auth.uid());
+
 -- 4.3 Settings & Invites
 CREATE POLICY "Membros podem ver settings" ON public.settings
 FOR SELECT USING (
@@ -109,19 +112,19 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 6. RPC para criação atômica
-CREATE OR REPLACE FUNCTION public.create_organization(p_name TEXT, p_owner_id UUID)
+CREATE OR REPLACE FUNCTION public.create_organization(p_name TEXT)
 RETURNS UUID AS $$
 DECLARE
     v_org_id UUID;
 BEGIN
     -- 1. Cria a org
     INSERT INTO public.organizations (name, owner_id)
-    VALUES (p_name, p_owner_id)
+    VALUES (p_name, auth.uid())
     RETURNING id INTO v_org_id;
 
     -- 2. Adiciona o owner como membro admin
     INSERT INTO public.organization_members (organization_id, user_id, role)
-    VALUES (v_org_id, p_owner_id, 'admin');
+    VALUES (v_org_id, auth.uid(), 'admin');
 
     RETURN v_org_id;
 END;
