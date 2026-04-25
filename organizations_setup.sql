@@ -59,16 +59,19 @@ FOR SELECT USING (true);
 CREATE POLICY "Owners podem tudo na organização" ON public.organizations
 FOR ALL USING (owner_id = auth.uid());
 
+CREATE POLICY "Usuários autenticados podem criar organizações" ON public.organizations
+FOR INSERT WITH CHECK (auth.uid() = owner_id);
+
 -- 4.2 Organization Members: SELECT permitido para o próprio ou para o OWNER da org
 CREATE POLICY "Membros podem ver associações permitidas" ON public.organization_members
 FOR SELECT USING (
     user_id = auth.uid() OR 
-    public.check_is_org_admin(organization_id)
+    EXISTS (SELECT 1 FROM public.organizations WHERE id = organization_id AND owner_id = auth.uid())
 );
 
 CREATE POLICY "Admins podem gerenciar membros" ON public.organization_members
 FOR ALL USING (
-    public.check_is_org_admin(organization_id)
+    EXISTS (SELECT 1 FROM public.organizations WHERE id = organization_id AND owner_id = auth.uid())
 );
 
 -- 4.3 Settings & Invites
