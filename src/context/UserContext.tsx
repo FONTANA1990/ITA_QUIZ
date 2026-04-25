@@ -137,7 +137,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         // 2. localStorage (última base usada)
         // 3. Primeira base da lista (se existir)
         const savedOrgId = preferredOrgId || localStorage.getItem("ita_quiz_active_org");
-        const found = orgs.find(o => o.id === savedOrgId) || orgs[0];
+        const found = orgs.find(o => o.id === savedOrgId);
         
         if (found) {
           setActiveOrg(found);
@@ -268,11 +268,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       console.log("[createOrganization] Organização criada com ID:", orgId);
       
-      // Salva preferência antes de recarregar
-      localStorage.setItem("ita_quiz_active_org", orgId);
+      // Injeção imediata no estado para evitar race conditions e loops de redirect
+      const newOrg: Organization = {
+        id: orgId,
+        name: name,
+        owner_id: user.id,
+        role: 'admin'
+      };
 
-      // Recarrega as organizações e seleciona a nova
-      await fetchUserOrganizations(user.id, orgId);
+      setOrganizations(prev => [...prev, newOrg]);
+      setActiveOrg(newOrg);
+      localStorage.setItem("ita_quiz_active_org", orgId);
+      
+      // Recarrega as organizações em background para sincronizar metadados extras se necessário
+      fetchUserOrganizations(user.id, orgId);
     } catch (err: any) {
       console.error("[createOrganization] Falha:", err);
       throw err;
