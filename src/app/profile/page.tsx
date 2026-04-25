@@ -464,7 +464,10 @@ export default function Profile() {
                 ))}
 
                 <button 
-                  onClick={() => router.push('/admin')}
+                  onClick={() => {
+                    switchOrganization("");
+                    router.push('/admin');
+                  }}
                   className="w-full mt-4 py-6 rounded-[2rem] border-2 border-dashed border-[var(--border)] text-slate-500 font-black uppercase text-[10px] tracking-[0.2em] hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 hover:text-[var(--primary)] transition-all flex flex-col items-center gap-2"
                 >
                   <Building2 size={24} className="opacity-30" />
