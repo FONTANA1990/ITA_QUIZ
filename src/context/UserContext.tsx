@@ -254,9 +254,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         p_owner_id: user.id
       });
 
+      console.log("RPC Result:", { orgId, error });
+
       if (error) {
         console.error("Erro ao criar organização via RPC:", error);
-        throw error;
+        throw new Error(`DB Error: ${error.message} (${error.code})`);
+      }
+
+      if (!orgId) {
+        throw new Error("O banco de dados não retornou um ID para a nova base. Verifique as permissões.");
       }
 
       console.log("Organização criada com ID:", orgId);

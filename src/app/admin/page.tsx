@@ -524,7 +524,7 @@ export default function AdminDashboard() {
                     "CRIAR BASE"
                   )}
                 </button>
-                {status?.type === "error" && status.msg.includes("base") && (
+                {status?.type === "error" && (
                    <p className="text-[10px] text-red-500 font-bold uppercase text-center mt-2">{status.msg}</p>
                 )}
               </div>
