@@ -273,6 +273,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const switchOrganization = (orgId: string) => {
+    if (!orgId) {
+      setActiveOrg(null);
+      localStorage.removeItem("ita_quiz_active_org");
+      return;
+    }
     const found = organizations.find(o => o.id === orgId);
     if (found) {
       setActiveOrg(found);
