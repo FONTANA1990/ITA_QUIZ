@@ -1,60 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 import { Loader2, ShieldAlert } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
+  const { user, organizations, loading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
+    if (loading) return;
 
-    const checkAuth = async () => {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        if (!isMounted) return;
+    if (!user) {
+      router.push("/profile");
+      return;
+    }
 
-        if (!authUser) {
-          router.push("/profile");
-          return;
-        }
+    // Permissão: Admin Global OR Dono do Email Master OR Admin de qualquer Base (Organização)
+    const isGlobalAdmin = user.role === "admin" || user.email === "mediattamoveis@gmail.com";
+    const isOrgAdmin = organizations.some(org => org.role === "admin");
 
-        // Permissão Hardcoded para Super-Admin
-        if (authUser.email === "mediattamoveis@gmail.com") {
-          setLoading(false);
-          return;
-        }
-
-        // Consultar banco para verificar se é Admin promovido
-        const { data: profile } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", authUser.id)
-          .maybeSingle();
-
-        if (isMounted) {
-          if (profile?.role === "admin") {
-            setLoading(false);
-          } else {
-            router.push("/profile");
-          }
-        }
-      } catch (err) {
-        console.error("Auth check failed", err);
-        if (isMounted) router.push("/profile");
-      }
-    };
-
-    checkAuth();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+    if (!isGlobalAdmin && !isOrgAdmin) {
+      router.push("/profile");
+    }
+  }, [user, organizations, loading, router]);
 
   if (loading) {
     return (
@@ -66,6 +36,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
     );
+  }
+
+  // Verificação de segurança extra para o render
+  const isGlobalAdmin = user?.role === "admin" || user?.email === "mediattamoveis@gmail.com";
+  const isOrgAdmin = organizations.some(org => org.role === "admin");
+
+  if (!user || (!isGlobalAdmin && !isOrgAdmin)) {
+    return null; 
   }
 
   return <>{children}</>;

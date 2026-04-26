@@ -175,7 +175,7 @@ export default function Profile() {
                   onClick={() => setActiveTab("adminAuth")} 
                 />
               )}
-              {(user?.role === 'admin' || user?.email === 'mediattamoveis@gmail.com') && (
+              {(user?.role === 'admin' || user?.email === 'mediattamoveis@gmail.com' || organizations.some(org => org.role === 'admin')) && (
                 <MenuButton 
                   label="Painel Administrativo" 
                   icon={Shield} 
